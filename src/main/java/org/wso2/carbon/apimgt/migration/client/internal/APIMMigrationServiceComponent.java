@@ -5,10 +5,11 @@ import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.ComponentContext;
 import org.wso2.carbon.apimgt.impl.APIManagerConfigurationService;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
-import org.wso2.carbon.apimgt.migration.DocFileMigration;
-import org.wso2.carbon.apimgt.migration.Swagger18Migration;
-import org.wso2.carbon.apimgt.migration.Swagger19Migration;
-import org.wso2.carbon.apimgt.migration.SwaggerResMigration;
+//import org.wso2.carbon.apimgt.migration.DocFileMigration;
+//import org.wso2.carbon.apimgt.migration.Swagger18Migration;
+//import org.wso2.carbon.apimgt.migration.Swagger19Migration;
+//import org.wso2.carbon.apimgt.migration.SwaggerResMigration;
+import org.wso2.carbon.apimgt.migration.client.MigrateFrom18to19;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
 import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.registry.core.service.TenantRegistryLoader;
@@ -35,27 +36,43 @@ public class APIMMigrationServiceComponent {
         String migrateVersion = System.getProperty("migrate");
         log.info("Migrate version => " + migrateVersion);
         if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_6)) {
-            log.info("Migrating APIM 1.6 swagger and documentation resources to APIM 1.7");
-            SwaggerResMigration swaggerMigration = new SwaggerResMigration();
-            DocFileMigration docMigration = new DocFileMigration();
-            try {
-                swaggerMigration.migrate();
-                if (log.isDebugEnabled()) {
-                    log.debug("Swagger migration successfully completed");
-                }
-                docMigration.migrate();
-                if (log.isDebugEnabled()) {
-                    log.debug("Document file migration successfully completed");
-                }
-            } catch (UserStoreException e) {
-                log.error("User store exception occurred while migrating " + e.getMessage());
-            }
+            log.info("Migrating WSO2 API Manager 1.6 swagger and documentation resources to WSO2 API Manager 1.7");
+//            SwaggerResMigration swaggerMigration = new SwaggerResMigration();
+//            DocFileMigration docMigration = new DocFileMigration();
+//            try {
+//                swaggerMigration.migrate();
+//                if (log.isDebugEnabled()) {
+//                    log.debug("Swagger migration successfully completed");
+//                }
+//                docMigration.migrate();
+//                if (log.isDebugEnabled()) {
+//                    log.debug("Document file migration successfully completed");
+//                }
+//            } catch (UserStoreException e) {
+//                log.error("User store exception occurred while migrating " + e.getMessage());
+//            }
         } else if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
-            log.info("Migrating APIM 1.7 Swagger resources to APIM 1.8");
-            // Create a thread and wait till the APIM DBUtils is initialized
+            log.info("Migrating WSO2 API Manager 1.7 Swagger resources to WSO2 API Manager 1.8");
+            // Create a thread and wait till the APIManager DBUtils is initialized
+//            try {
+//                Swagger18Migration swagger18Migration = new Swagger18Migration();
+//                swagger18Migration.migrate();
+//                if (log.isDebugEnabled()) {
+//                    log.debug("Swagger migration successfully completed");
+//                }
+//            } catch (UserStoreException e) {
+//                log.error("User store exception occurred while migrating " + e.getMessage());
+//            } catch (InterruptedException e) {
+//                log.error("Interrupted exception occurred while migrating " + e.getMessage());
+//            }
+
+        } else if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
+
+            // Create a thread and wait till the APIManager DBUtils is initialized
             try {
-                Swagger18Migration swagger18Migration = new Swagger18Migration();
-                swagger18Migration.migrate();
+                MigrateFrom18to19 swagger19Migration = new MigrateFrom18to19();
+                log.info("Migrating WSO2 API Manager 1.8.0 swagger resources to WSO2 API Manager 1.9.0");
+                swagger19Migration.swaggerResourceMigration();
                 if (log.isDebugEnabled()) {
                     log.debug("Swagger migration successfully completed");
                 }
@@ -64,23 +81,8 @@ public class APIMMigrationServiceComponent {
             } catch (InterruptedException e) {
                 log.error("Interrupted exception occurred while migrating " + e.getMessage());
             }
-
-        } else if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
-            log.info("Migrating APIM 1.8 Swagger resources to APIM 1.9");
-            // Create a thread and wait till the APIM DBUtils is initialized
-            try {
-                Swagger19Migration swagger19Migration = new Swagger19Migration();
-                swagger19Migration.migrate();
-                if (log.isDebugEnabled()) {
-                    log.debug("Swagger migration successfully completed");
-                }
-            } catch (UserStoreException e) {
-                log.error("User store exception occurred while migrating " + e.getMessage());
-            } catch (InterruptedException e) {
-                log.error("Inttionerrupted excep occurred while migrating " + e.getMessage());
-            }
         }
-        log.info("APIM migration bundle activated successfully");
+        log.info("WSO2 API Manager migration bundle activated successfully");
     }
 
     /**
@@ -89,7 +91,7 @@ public class APIMMigrationServiceComponent {
      * @param context OSGi component context.
      */
     protected void deactivate(ComponentContext context) {
-        log.info("APIM migration bundle is deactivated");
+        log.info("WSO2 API Manager migration bundle is deactivated");
     }
 
     /**
@@ -99,7 +101,7 @@ public class APIMMigrationServiceComponent {
      */
     protected void setRegistryService(RegistryService registryService) {
         if (log.isDebugEnabled()) {
-            log.debug("Setting RegistryService for APIM migration");
+            log.debug("Setting RegistryService for WSO2 API Manager migration");
         }
         ServiceHolder.setRegistryService(registryService);
     }
@@ -122,7 +124,7 @@ public class APIMMigrationServiceComponent {
      * @param realmService service to get tenant data.
      */
     protected void setRealmService(RealmService realmService) {
-        log.debug("Setting RealmService for APIM migration");
+        log.debug("Setting RealmService for WSO2 API Manager migration");
         ServiceHolder.setRealmService(realmService);
     }
 
@@ -144,7 +146,7 @@ public class APIMMigrationServiceComponent {
      * @param tenantRegLoader tenant registry loader
      */
     protected void setTenantRegistryLoader(TenantRegistryLoader tenantRegLoader) {
-        log.debug("Setting TenantRegistryLoader for APIM migration");
+        log.debug("Setting TenantRegistryLoader for WSO2 API Manager migration");
         ServiceHolder.setTenantRegLoader(tenantRegLoader);
     }
 
