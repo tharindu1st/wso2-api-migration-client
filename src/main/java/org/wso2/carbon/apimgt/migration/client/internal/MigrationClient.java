@@ -16,6 +16,8 @@
 
 package org.wso2.carbon.apimgt.migration.client.internal;
 
+import org.wso2.carbon.user.api.UserStoreException;
+
 /**
  * Public interface for all migrations
  *
@@ -23,7 +25,7 @@ package org.wso2.carbon.apimgt.migration.client.internal;
 public interface MigrationClient {
     public void databaseMigration();
 
-    public void swaggerResourceMigration();
+    public void swaggerResourceMigration() throws UserStoreException, InterruptedException;
 
     public void registryMigration();
 
