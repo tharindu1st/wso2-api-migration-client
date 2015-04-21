@@ -17,6 +17,23 @@ import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.service.RealmService;
 
 
+/**
+ * @scr.component name="org.wso2.carbon.apimgt.migration.client" immediate="true"
+ * @scr.reference name="realm.service"
+ * interface="org.wso2.carbon.user.core.service.RealmService" cardinality="1..1"
+ * policy="dynamic" bind="setRealmService" unbind="unsetRealmService"
+ * @scr.reference name="registry.service"
+ * interface="org.wso2.carbon.registry.core.service.RegistryService" cardinality="1..1"
+ * policy="dynamic" bind="setRegistryService" unbind="unsetRegistryService"
+ * @scr.reference name="registry.core.dscomponent"
+ * interface="org.wso2.carbon.registry.core.service.RegistryService" cardinality="1..1"
+ * policy="dynamic" bind="setRegistryService" unbind="unsetRegistryService"
+ * @scr.reference name="tenant.registryloader" interface="org.wso2.carbon.registry.core.service.TenantRegistryLoader" cardinality="1..1"
+ * policy="dynamic" bind="setTenantRegistryLoader" unbind="unsetTenantRegistryLoader"
+ * @scr.reference name="apim.configuration" interface="org.wso2.carbon.apimgt.impl.APIManagerConfigurationService" cardinality="1..1"
+ * policy="dynamic" bind="setApiManagerConfig" unbind="unsetApiManagerConfig"
+ */
+
 @SuppressWarnings("unused")
 public class APIMMigrationServiceComponent {
 

@@ -15,8 +15,6 @@
  */
 package org.wso2.carbon.apimgt.migration.client;
 
-import org.wso2.carbon.apimgt.migration.client.internal.MigrationClient;
-
 public class MigrateFrom16to17 implements MigrationClient {
     @Override
     public void databaseMigration() {

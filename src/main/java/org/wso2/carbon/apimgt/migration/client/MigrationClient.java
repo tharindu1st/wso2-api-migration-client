@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package org.wso2.carbon.apimgt.migration.client.internal;
+package org.wso2.carbon.apimgt.migration.client;
 
 import org.wso2.carbon.user.api.UserStoreException;
 

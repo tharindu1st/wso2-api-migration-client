@@ -69,7 +69,7 @@
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Name>${project.artifactId}</Bundle-Name>
                         <Private-Package>
-                            org.wso2.carbon.apimgt.migration.internal
+                            org.wso2.carbon.apimgt.migration.client.internal
                         </Private-Package>
                         <Import-Package>
                             org.apache.commons.logging.*; version=${org.wso2.carbon.logging.import.version},
