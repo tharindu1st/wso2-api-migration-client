@@ -66,6 +66,7 @@ public class Constants {
     public static final String VERSION_1_6 = "1.6";
     public static final String VERSION_1_7 = "1.7";
     public static final String VERSION_1_8 = "1.8";
+    public static final String VERSION_1_9 = "1.9";
 
 
     //constants for swagger v2

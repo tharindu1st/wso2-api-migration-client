@@ -9,6 +9,7 @@ import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 //import org.wso2.carbon.apimgt.migration.Swagger18Migration;
 //import org.wso2.carbon.apimgt.migration.Swagger19Migration;
 //import org.wso2.carbon.apimgt.migration.SwaggerResMigration;
+import org.wso2.carbon.apimgt.migration.client.MigrateFrom17to18;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom18to19;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
 import org.wso2.carbon.registry.core.service.RegistryService;
@@ -52,7 +53,7 @@ public class APIMMigrationServiceComponent {
         }
         String migrateVersion = System.getProperty("migrate");
         log.info("Migrate version => " + migrateVersion);
-        if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_6)) {
+        if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
             log.info("Migrating WSO2 API Manager 1.6 swagger and documentation resources to WSO2 API Manager 1.7");
 //            SwaggerResMigration swaggerMigration = new SwaggerResMigration();
 //            DocFileMigration docMigration = new DocFileMigration();
@@ -68,28 +69,25 @@ public class APIMMigrationServiceComponent {
 //            } catch (UserStoreException e) {
 //                log.error("User store exception occurred while migrating " + e.getMessage());
 //            }
-        } else if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
-            log.info("Migrating WSO2 API Manager 1.7 Swagger resources to WSO2 API Manager 1.8");
-            // Create a thread and wait till the APIManager DBUtils is initialized
-//            try {
-//                Swagger18Migration swagger18Migration = new Swagger18Migration();
-//                swagger18Migration.migrate();
-//                if (log.isDebugEnabled()) {
-//                    log.debug("Swagger migration successfully completed");
-//                }
-//            } catch (UserStoreException e) {
-//                log.error("User store exception occurred while migrating " + e.getMessage());
-//            } catch (InterruptedException e) {
-//                log.error("Interrupted exception occurred while migrating " + e.getMessage());
-//            }
-
         } else if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
-
+            log.info("Migrating WSO2 API Manager 1.7.0 Swagger resources to WSO2 API Manager 1.8.0");
             // Create a thread and wait till the APIManager DBUtils is initialized
             try {
-                MigrateFrom18to19 swagger19Migration = new MigrateFrom18to19();
-                log.info("Migrating WSO2 API Manager 1.8.0 swagger resources to WSO2 API Manager 1.9.0");
-                swagger19Migration.swaggerResourceMigration();
+                MigrateFrom17to18 migrateFrom17to18 = new MigrateFrom17to18();
+
+                //Database Migration
+                log.info("Migrating WSO2 API Manager 1.7.0 databases to WSO2 API Manager 1.8.0");
+
+                //Swagger Resource Migration
+                log.info("Migrating WSO2 API Manager 1.7.0 swagger resources to WSO2 API Manager 1.8.0");
+                migrateFrom17to18.swaggerResourceMigration();
+
+                //Registry Migration
+                log.info("Migrating WSO2 API Manager 1.7.0 registry resources to WSO2 API Manager 1.8.0");
+
+                //Rxt Migration
+                log.info("Migrating WSO2 API Manager 1.7.0 Rxt resources to WSO2 API Manager 1.8.0");
+
                 if (log.isDebugEnabled()) {
                     log.debug("Swagger migration successfully completed");
                 }
@@ -98,8 +96,36 @@ public class APIMMigrationServiceComponent {
             } catch (InterruptedException e) {
                 log.error("Interrupted exception occurred while migrating " + e.getMessage());
             }
+
+        } else if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
+            log.info("Migrating WSO2 API Manager 1.8.0 Swagger resources to WSO2 API Manager 1.9.0");
+            // Create a thread and wait till the APIManager DBUtils is initialized
+            try {
+                MigrateFrom18to19 migrateFrom18to19 = new MigrateFrom18to19();
+
+                //Database Migration
+                log.info("Migrating WSO2 API Manager 1.8.0 databases to WSO2 API Manager 1.9.0");
+
+                //Swagger Resource Migration
+                log.info("Migrating WSO2 API Manager 1.8.0 swagger resources to WSO2 API Manager 1.9.0");
+                migrateFrom18to19.swaggerResourceMigration();
+
+                //Registry Migration
+                log.info("Migrating WSO2 API Manager 1.8.0 registry resources to WSO2 API Manager 1.9.0");
+
+                //Rxt Migration
+                log.info("Migrating WSO2 API Manager 1.8.0 Rxt resources to WSO2 API Manager 1.9.0");
+
+                if (log.isDebugEnabled()) {
+                    log.debug("API Manager 1.8.0 to 1.9.0 migration successfully completed");
+                }
+            } catch (UserStoreException e) {
+                log.error("User store exception occurred while migrating " + e.getMessage());
+            } catch (InterruptedException e) {
+                log.error("Interrupted exception occurred while migrating " + e.getMessage());
+            }
         }
-        log.info("WSO2 API Manager migration bundle activated successfully");
+        log.info("WSO2 API Manager migration completed successfully");
     }
 
     /**

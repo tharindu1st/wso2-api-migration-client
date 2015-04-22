@@ -35,4 +35,9 @@ public class MigrateFrom16to17 implements MigrationClient {
     public void rxtMigration() {
 
     }
+
+    @Override
+    public boolean cleanOldResources() {
+        return false;
+    }
 }

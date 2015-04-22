@@ -67,11 +67,14 @@ public class MigrateFrom18to19 implements MigrationClient {
 
     @Override
     public void swaggerResourceMigration() throws UserStoreException, InterruptedException {
-        log.info("Swagger migration for AM 1.9 started");
+        log.info("Swagger migration for API Manager 1.9.0 started");
 
         TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
         Tenant[] tenantsArray = tenantManager.getAllTenants();
-        log.debug("Tenant array loaded successfully");
+        if(log.isDebugEnabled()){
+            log.debug("Tenant array loaded successfully");
+        }
+
 
         // Add  super tenant to the tenant array
         Tenant[] allTenantsArray = Arrays.copyOf(tenantsArray, tenantsArray.length + 1);
@@ -174,6 +177,11 @@ public class MigrateFrom18to19 implements MigrationClient {
     @Override
     public void rxtMigration() {
 
+    }
+
+    @Override
+    public boolean cleanOldResources() {
+        return false;
     }
 
     /**

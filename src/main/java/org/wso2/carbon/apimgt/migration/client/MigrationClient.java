@@ -23,11 +23,20 @@ import org.wso2.carbon.user.api.UserStoreException;
  *
  */
 public interface MigrationClient {
+
     public void databaseMigration();
 
+    /**
+     * This method is used to migrate swagger resources
+     *
+     * @throws UserStoreException
+     * @throws InterruptedException
+     */
     public void swaggerResourceMigration() throws UserStoreException, InterruptedException;
 
     public void registryMigration();
 
     public void rxtMigration();
+
+    public boolean cleanOldResources();
 }
