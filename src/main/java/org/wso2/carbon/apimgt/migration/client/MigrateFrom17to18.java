@@ -60,7 +60,7 @@ public class MigrateFrom17to18 implements MigrationClient {
 
     @Override
     public void swaggerResourceMigration() throws UserStoreException, InterruptedException {
-        log.info("Swagger migration for API Manager 1.9.0 started");
+        log.info("Swagger migration for API Manager 1.8.0 started");
 
         TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
         Tenant[] tenantsArray = tenantManager.getAllTenants();

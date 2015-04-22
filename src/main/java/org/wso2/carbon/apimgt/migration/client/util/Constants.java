@@ -68,6 +68,18 @@ public class Constants {
     public static final String VERSION_1_8 = "1.8";
     public static final String VERSION_1_9 = "1.9";
 
+    //constants for swagger v1.2
+
+    public static final String PATH_JSON_TEMPLATE = "{\n    \"path\": \"\",\n    \"operations\": []\n}";
+    public static final String OPERATION_JSON_TEMPLATE = "{\n    \"method\": \"\",\n    \"parameters\": []\n}";
+    public static final String API_JSON_TEMPALTE = "{\n    \"apiVersion\": \"\",\n    \"swaggerVersion\": \"1.2\",\n    " +
+            "\"apis\": [],\n    \"info\": {\n        \"title\": \"\",\n        \"description\": \"\",\n        " +
+            "\"termsOfServiceUrl\": \"\",\n        \"contact\": \"\",\n        \"license\": \"\",\n        " +
+            "\"licenseUrl\": \"\"\n    },\n    \"authorizations\": {\n        \"oauth2\": {\n            " +
+            "\"type\": \"oauth2\",\n            \"scopes\": []\n        }\n    }\n}";
+
+    public static final String API_RESOURCE_JSON_TEMPALTE = "{\n    \"apiVersion\": \"\",\n    \"swaggerVersion\": \"1.2\",\n    \"resourcePath\":\"\",\n    \"apis\": [] \n}";
+
 
     //constants for swagger v2
     //default Swagger v2 response parameter

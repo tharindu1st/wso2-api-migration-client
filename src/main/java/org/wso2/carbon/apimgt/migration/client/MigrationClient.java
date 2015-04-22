@@ -34,7 +34,7 @@ public interface MigrationClient {
      */
     public void swaggerResourceMigration() throws UserStoreException, InterruptedException;
 
-    public void registryMigration();
+    public void registryMigration() throws UserStoreException;
 
     public void rxtMigration();
 
