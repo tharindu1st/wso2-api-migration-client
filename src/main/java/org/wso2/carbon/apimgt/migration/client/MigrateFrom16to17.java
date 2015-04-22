@@ -379,8 +379,8 @@ public class MigrateFrom16to17 implements MigrationClient {
     }
 
     @Override
-    public boolean cleanOldResources() {
-        return false;
+    public void cleanOldResources() {
+
     }
 
     /**

@@ -117,7 +117,7 @@ public class MigrateFrom18to19 implements MigrationClient {
                             log.error("Swagger Resource migration has not happen yet for " +
                                     apiName + "-" + apiVersion + "-"
                                     + apiProviderName +
-                                    ". Please run -D" + Constants.VERSION_1_6 + " first");
+                                    ". Please run -D" + Constants.VERSION_1_7 + " first");
 
                         } else {
                             log.info("Creating swagger v2.0 resource for : " + apiName + "-" + apiVersion + "-" + apiProviderName);
@@ -180,8 +180,73 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
     @Override
-    public boolean cleanOldResources() {
-        return false;
+    public void cleanOldResources() throws UserStoreException {
+
+        TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
+        Tenant[] tenantsArray = tenantManager.getAllTenants();
+        if(log.isDebugEnabled()){
+            log.debug("Tenant array loaded successfully");
+        }
+
+
+        // Add  super tenant to the tenant array
+        Tenant[] allTenantsArray = Arrays.copyOf(tenantsArray, tenantsArray.length + 1);
+        org.wso2.carbon.user.core.tenant.Tenant superTenant = new org.wso2.carbon.user.core.tenant.Tenant();
+        superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
+        superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
+        allTenantsArray[allTenantsArray.length - 1] = superTenant;
+        if (log.isDebugEnabled()) {
+            log.debug("Super tenant added to the tenant array");
+        }
+
+        for (Tenant tenant : allTenantsArray) {
+            log.info("Swagger migration for tenant " + tenant.getDomain() + "[" + tenant.getId() + "]" + " ");
+            try {
+                PrivilegedCarbonContext.startTenantFlow();
+                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
+                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenant.getId());
+
+                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(
+                        tenant.getId()).getRealmConfiguration().getAdminUserName();
+                ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
+                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant.getId());
+                GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
+                GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
+                GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
+
+                for (GenericArtifact artifact : artifacts) {
+                    API api;
+                    try {
+                        api = getAPI(artifact, registry);
+
+                        APIIdentifier apiIdentifier = api.getId();
+                        String apiName = apiIdentifier.getApiName();
+                        String apiVersion = apiIdentifier.getVersion();
+                        String apiProviderName = apiIdentifier.getProviderName();
+
+                        String swagger12location = ResourceUtil.getSwagger12ResourceLocation(apiName, apiVersion, apiProviderName);
+
+                        if (registry.resourceExists(swagger12location)) {
+                            registry.delete(APIConstants.API_DOC_LOCATION);
+                            log.info("Resource deleted from the registry.");
+
+                        }
+                    } catch (APIManagementException e) {
+                        log.error("APIManagementException while migrating api in " + tenant.getDomain(), e);
+                    } catch (RegistryException e) {
+                        log.error("RegistryException while getting api resource for " + tenant.getDomain(), e);
+                    } catch (Exception e) {
+                        log.error(e.getMessage(), e);
+                    }
+                }
+            } catch (RegistryException e) {
+                log.error("RegistryException while getting artifacts for  " + tenant.getDomain(), e);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            } finally {
+                PrivilegedCarbonContext.endTenantFlow();
+            }
+        }
     }
 
     /**

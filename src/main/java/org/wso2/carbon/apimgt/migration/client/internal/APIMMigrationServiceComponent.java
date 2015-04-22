@@ -9,6 +9,7 @@ import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 //import org.wso2.carbon.apimgt.migration.Swagger18Migration;
 //import org.wso2.carbon.apimgt.migration.Swagger19Migration;
 //import org.wso2.carbon.apimgt.migration.SwaggerResMigration;
+import org.wso2.carbon.apimgt.migration.client.MigrateFrom16to17;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom17to18;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom18to19;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
@@ -39,6 +40,7 @@ import org.wso2.carbon.user.core.service.RealmService;
 public class APIMMigrationServiceComponent {
 
     private static final Log log = LogFactory.getLog(APIMMigrationServiceComponent.class);
+    private boolean cleanupNeeded;
 
     /**
      * Method to activate bundle.
@@ -52,23 +54,37 @@ public class APIMMigrationServiceComponent {
             log.error("Error occurred while initializing DB Util " + e.getMessage());
         }
         String migrateVersion = System.getProperty("migrate");
-        log.info("Migrate version => " + migrateVersion);
+        if(System.getProperty("cleanup")!=null) {
+            cleanupNeeded = Boolean.parseBoolean(System.getProperty("cleanup"));
+        }
+
+        log.info("All the APIs will migrate to " + migrateVersion + ".0");
         if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
             log.info("Migrating WSO2 API Manager 1.6 swagger and documentation resources to WSO2 API Manager 1.7");
-//            SwaggerResMigration swaggerMigration = new SwaggerResMigration();
-//            DocFileMigration docMigration = new DocFileMigration();
-//            try {
-//                swaggerMigration.migrate();
-//                if (log.isDebugEnabled()) {
-//                    log.debug("Swagger migration successfully completed");
-//                }
-//                docMigration.migrate();
-//                if (log.isDebugEnabled()) {
-//                    log.debug("Document file migration successfully completed");
-//                }
-//            } catch (UserStoreException e) {
-//                log.error("User store exception occurred while migrating " + e.getMessage());
-//            }
+            try {
+
+                MigrateFrom16to17 migrateFrom16to17 = new MigrateFrom16to17();
+
+                //Database Migration
+                log.info("Migrating WSO2 API Manager 1.6.0 databases to WSO2 API Manager 1.7.0");
+
+                //Swagger Resource Migration
+                log.info("Migrating WSO2 API Manager 1.6.0 swagger resources to WSO2 API Manager 1.7.0");
+                migrateFrom16to17.swaggerResourceMigration();
+
+                //Registry Migration
+                log.info("Migrating WSO2 API Manager 1.6.0 registry resources to WSO2 API Manager 1.7.0");
+
+                //Rxt Migration
+                log.info("Migrating WSO2 API Manager 1.6.0 Rxt resources to WSO2 API Manager 1.7.0");
+
+                if (log.isDebugEnabled()) {
+                    log.debug("API Manager 1.6.0 to 1.7.0 migration successfully completed");
+                }
+            } catch (UserStoreException e) {
+                log.error("User store exception occurred while migrating " + e.getMessage());
+            }
+
         } else if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
             log.info("Migrating WSO2 API Manager 1.7.0 Swagger resources to WSO2 API Manager 1.8.0");
             // Create a thread and wait till the APIManager DBUtils is initialized
@@ -89,8 +105,9 @@ public class APIMMigrationServiceComponent {
                 log.info("Migrating WSO2 API Manager 1.7.0 Rxt resources to WSO2 API Manager 1.8.0");
 
                 if (log.isDebugEnabled()) {
-                    log.debug("Swagger migration successfully completed");
+                    log.debug("API Manager 1.7.0 to 1.8.0 migration successfully completed");
                 }
+
             } catch (UserStoreException e) {
                 log.error("User store exception occurred while migrating " + e.getMessage());
             } catch (InterruptedException e) {
@@ -115,6 +132,11 @@ public class APIMMigrationServiceComponent {
 
                 //Rxt Migration
                 log.info("Migrating WSO2 API Manager 1.8.0 Rxt resources to WSO2 API Manager 1.9.0");
+
+                if(cleanupNeeded) {
+                    migrateFrom18to19.cleanOldResources();
+                    log.info("Old resources cleaned up.");
+                }
 
                 if (log.isDebugEnabled()) {
                     log.debug("API Manager 1.8.0 to 1.9.0 migration successfully completed");

@@ -38,5 +38,5 @@ public interface MigrationClient {
 
     public void rxtMigration();
 
-    public boolean cleanOldResources();
+    public void cleanOldResources() throws UserStoreException;
 }

@@ -491,10 +491,8 @@ public class ResourceUtil {
     public static String getSwagger2ResourceLocation(String apiName, String apiVersion,
                                                      String apiProvider) {
         return
-                APIConstants.API_DOC_LOCATION + RegistryConstants.PATH_SEPARATOR +
-                        apiName + "-" + apiVersion + "-" + apiProvider +
-                        RegistryConstants.PATH_SEPARATOR +
-                        "2.0" + RegistryConstants.PATH_SEPARATOR + "swagger.json";
+                APIConstants.API_ROOT_LOCATION + RegistryConstants.PATH_SEPARATOR +  apiProvider +
+                        RegistryConstants.PATH_SEPARATOR + apiName + RegistryConstants.PATH_SEPARATOR + apiVersion + RegistryConstants.PATH_SEPARATOR + "swagger.json";
     }
 
     public static String getAPIDefinitionFilePath(String apiName, String apiVersion, String apiProvider) {

@@ -171,8 +171,8 @@ public class MigrateFrom17to18 implements MigrationClient {
     }
 
     @Override
-    public boolean cleanOldResources() {
-        return false;
+    public void cleanOldResources() {
+
     }
 
     /**
