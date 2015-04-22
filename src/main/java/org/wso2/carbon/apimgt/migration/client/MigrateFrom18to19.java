@@ -28,7 +28,6 @@ import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.api.model.URITemplate;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
-import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.migration.client.internal.ServiceHolder;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
 import org.wso2.carbon.apimgt.migration.client.util.ResourceUtil;
@@ -50,9 +49,6 @@ import org.wso2.carbon.user.core.tenant.TenantManager;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,7 +74,7 @@ public class MigrateFrom18to19 implements MigrationClient {
 
         TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
         Tenant[] tenantsArray = tenantManager.getAllTenants();
-        if(log.isDebugEnabled()){
+        if (log.isDebugEnabled()) {
             log.debug("Tenant array loaded successfully");
         }
 
@@ -140,11 +136,11 @@ public class MigrateFrom18to19 implements MigrationClient {
 
 
                             //Find the visible roles of to set to the resource
-                            String visibleRolesList = api.getVisibleRoles();
+                            /*String visibleRolesList = api.getVisibleRoles();
                             String[] visibleRoles = new String[0];
                             if (visibleRolesList != null) {
                                 visibleRoles = visibleRolesList.split(",");
-                            }
+                            }*/
 
 
                             //Currently set to ANONYMOUS_ROLE, need to set to visible roles
@@ -190,7 +186,7 @@ public class MigrateFrom18to19 implements MigrationClient {
 
         TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
         Tenant[] tenantsArray = tenantManager.getAllTenants();
-        if(log.isDebugEnabled()){
+        if (log.isDebugEnabled()) {
             log.debug("Tenant array loaded successfully");
         }
 

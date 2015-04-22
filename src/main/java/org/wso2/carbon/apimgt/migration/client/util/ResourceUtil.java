@@ -38,6 +38,7 @@ import org.wso2.carbon.utils.CarbonUtils;
 
 import javax.sql.DataSource;
 
+@SuppressWarnings("unchecked , unused")
 public class ResourceUtil {
 
     private static final Log log = LogFactory.getLog(ResourceUtil.class);
@@ -99,14 +100,14 @@ public class ResourceUtil {
         String key = null;
 
         JSONArray apiArray = (JSONArray) resource.get(Constants.API_DOC_11_APIS);
-        for (int i = 0; i < apiArray.size(); i++) {
+        for (Object anApiArray : apiArray) {
 
-            JSONObject apiInfo = (JSONObject) apiArray.get(i);
+            JSONObject apiInfo = (JSONObject) anApiArray;
             String path = (String) apiInfo.get(Constants.API_DOC_11_PATH);
             JSONArray operations = (JSONArray) apiInfo.get(Constants.API_DOC_11_OPERATIONS);
 
-            for (int j = 0; j < operations.size(); j++) {
-                JSONObject operation = (JSONObject) operations.get(j);
+            for (Object operation1 : operations) {
+                JSONObject operation = (JSONObject) operation1;
                 String httpMethod = (String) operation.get(Constants.API_DOC_11_METHOD);
                 JSONArray parameterArray = (JSONArray) operation.get(Constants.API_DOC_11_PARAMETERS);
 
@@ -202,7 +203,7 @@ public class ResourceUtil {
                 operation.put(Constants.API_DOC_12_NICKNAME, nickname);
                 String key = path + "_" + method.toLowerCase();
 
-                JSONArray parameters = new JSONArray();
+                JSONArray parameters;
                 if (allParameters.containsKey(key)) {
                     parameters = allParameters.get(key);
 
@@ -427,30 +428,30 @@ public class ResourceUtil {
             JSONObject resourceDoc =
                     (JSONObject) parser.parse(new String((byte[]) resource.getContent()));
             JSONArray apis = (JSONArray) resourceDoc.get(Constants.API_DOC_12_APIS);
-            for (int j = 0; j < apis.size(); j++) {
-                JSONObject api = (JSONObject) apis.get(j);
+            for (Object api1 : apis) {
+                JSONObject api = (JSONObject) api1;
                 JSONArray operations = (JSONArray) api.get("operations");
 
-                for (int k = 0; k < operations.size(); k++) {
-                    JSONObject operation = (JSONObject) operations.get(k);
+                for (Object operation1 : operations) {
+                    JSONObject operation = (JSONObject) operation1;
                     JSONArray parameters = (JSONArray) operation.get("parameters");
                     String method = (String) operation.get("method");
                     JSONArray parametersNew = new JSONArray();
                     //remove header and body parameters
-                    for (int l = 0; l < parameters.size(); l++) {
-                        JSONObject parameter = (JSONObject) parameters.get(l);
-						/*
-						if(parameter.get("paramType").equals("header") ||
+                    for (Object parameter1 : parameters) {
+                        JSONObject parameter = (JSONObject) parameter1;
+                        /*
+                        if(parameter.get("paramType").equals("header") ||
 								parameter.get("paramType").equals("body")){
 							continue;
 						} */
-                        if(parameter.get("paramType").equals("header")){
+                        if (parameter.get("paramType").equals("header")) {
                             continue;
                         }
-                        if(parameter.get("paramType").equals("body")) {
+                        if (parameter.get("paramType").equals("body")) {
 
                             //only remove body of a GET and DELETE
-                            if("GET".equalsIgnoreCase(method) ||
+                            if ("GET".equalsIgnoreCase(method) ||
                                     "DELETE".equalsIgnoreCase(method)) {
                                 continue;
                             }
@@ -503,9 +504,9 @@ public class ResourceUtil {
 
     /**
      * location for the swagger v2.0 resources
-     * TODO check the correct swagger 2 location and the resource name. Currently it is /2.0/swagger.json
-     * @param apiName name of the API
-     * @param apiVersion version of the API
+     *
+     * @param apiName     name of the API
+     * @param apiVersion  version of the API
      * @param apiProvider provider name of the API
      * @return swagger v2.0 resource location as a string
      */
@@ -522,6 +523,12 @@ public class ResourceUtil {
     }
 
 
+    /**
+     * This method is used to get the database driver name
+     *
+     * @return user database type as a string
+     * @throws SQLException
+     */
     public static String getDatabaseDriverName() throws SQLException {
         Connection connection = APIMgtDBUtil.getConnection();
         String databaseType;

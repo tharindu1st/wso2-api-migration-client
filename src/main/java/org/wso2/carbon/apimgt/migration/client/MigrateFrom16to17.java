@@ -29,6 +29,7 @@ import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.api.model.Documentation;
 import org.wso2.carbon.apimgt.api.model.URITemplate;
 import org.wso2.carbon.apimgt.impl.APIConstants;
+import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.migration.client.internal.ServiceHolder;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
@@ -47,6 +48,9 @@ import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.tenant.TenantManager;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.*;
 
 @SuppressWarnings("unchecked")
@@ -55,7 +59,38 @@ public class MigrateFrom16to17 implements MigrationClient {
     private static final Log log = LogFactory.getLog(MigrateFrom16to17.class);
 
     @Override
-    public void databaseMigration() {
+    public void databaseMigration() throws SQLException {
+        String databaseDriverName = ResourceUtil.getDatabaseDriverName();
+        String queryToExecute;
+
+        Connection connection = APIMgtDBUtil.getConnection();
+        connection.setAutoCommit(false);
+
+        if (databaseDriverName.equalsIgnoreCase("mysql")) {
+            queryToExecute = Constants.MYSQL_QUERY_16_TO_17;
+        } else if (databaseDriverName.equalsIgnoreCase("mssql")) {
+            queryToExecute = Constants.MSSQL_QUERY_16_TO_17;
+        } else if (databaseDriverName.equalsIgnoreCase("h2")) {
+            queryToExecute = Constants.H2_QUERY_16_TO_17;
+        }else {
+            queryToExecute = Constants.ORACLE_QUERY_16_TO_17;
+        }
+
+        PreparedStatement preparedStatement = connection.prepareStatement(queryToExecute);
+        boolean isUpdated = preparedStatement.execute();
+        if (isUpdated) {
+            connection.commit();
+        } else {
+            connection.rollback();
+        }
+        preparedStatement.close();
+
+        if (log.isDebugEnabled()) {
+            log.debug("Query " + queryToExecute + " executed on " + databaseDriverName);
+        }
+
+        connection.close();
+        log.info("DB resource migration done for all the tenants");
 
     }
 

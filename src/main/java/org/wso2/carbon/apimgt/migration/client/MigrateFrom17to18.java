@@ -57,36 +57,37 @@ import java.util.Set;
 public class MigrateFrom17to18 implements MigrationClient {
 
     private static final Log log = LogFactory.getLog(MigrateFrom17to18.class);
+
     @Override
     public void databaseMigration() throws SQLException {
         String databaseDriverName = ResourceUtil.getDatabaseDriverName();
         String queryToExecute;
 
-        Connection connection  = APIMgtDBUtil.getConnection();
+        Connection connection = APIMgtDBUtil.getConnection();
         connection.setAutoCommit(false);
 
-        if(databaseDriverName.equalsIgnoreCase("mysql")){
-            queryToExecute = Constants.MYSQL_QUERY;
-        } else if(databaseDriverName.equalsIgnoreCase("mssql")){
-            queryToExecute = Constants.MSSQL_QUERY;
-        } else if (databaseDriverName.equalsIgnoreCase("h2")){
-            queryToExecute = Constants.H2_QUERY;
+        if (databaseDriverName.equalsIgnoreCase("mysql")) {
+            queryToExecute = Constants.MYSQL_QUERY_17_TO_18;
+        } else if (databaseDriverName.equalsIgnoreCase("mssql")) {
+            queryToExecute = Constants.MSSQL_QUERY_17_TO_18;
+        } else if (databaseDriverName.equalsIgnoreCase("h2")) {
+            queryToExecute = Constants.H2_QUERY_17_TO_18;
         } else if (databaseDriverName.contains("postgresql")) {
-            queryToExecute = Constants.POSTGRESQL_QUERY;
+            queryToExecute = Constants.POSTGRESQL_QUERY_17_TO_18;
         } else {
-            queryToExecute = Constants.ORACLE_QUERY;
+            queryToExecute = Constants.ORACLE_QUERY_17_TO_18;
         }
 
         PreparedStatement preparedStatement = connection.prepareStatement(queryToExecute);
         boolean isUpdated = preparedStatement.execute();
-        if(isUpdated) {
-            preparedStatement.close();
+        if (isUpdated) {
             connection.commit();
         } else {
             connection.rollback();
         }
+        preparedStatement.close();
 
-        if(log.isDebugEnabled()) {
+        if (log.isDebugEnabled()) {
             log.debug("Query " + queryToExecute + " executed on " + databaseDriverName);
         }
 
@@ -101,7 +102,7 @@ public class MigrateFrom17to18 implements MigrationClient {
 
         TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
         Tenant[] tenantsArray = tenantManager.getAllTenants();
-        if(log.isDebugEnabled()){
+        if (log.isDebugEnabled()) {
             log.debug("Tenant array loaded successfully");
         }
 
@@ -128,7 +129,6 @@ public class MigrateFrom17to18 implements MigrationClient {
                 GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
                 GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
                 GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
-
 
 
                 for (GenericArtifact artifact : artifacts) {
@@ -177,17 +177,17 @@ public class MigrateFrom17to18 implements MigrationClient {
 
 
                     } catch (APIManagementException e) {
-                        log.error("APIManagementException while migrating api in " + tenant.getDomain() , e);
+                        log.error("APIManagementException while migrating api in " + tenant.getDomain(), e);
                     } catch (RegistryException e) {
-                        log.error("RegistryException while getting api resource for " + tenant.getDomain() , e);
+                        log.error("RegistryException while getting api resource for " + tenant.getDomain(), e);
                     } catch (ParseException e) {
-                        log.error("Error while parsing json resource for " + tenant.getDomain() , e);
+                        log.error("Error while parsing json resource for " + tenant.getDomain(), e);
                     } catch (Exception e) {
                         log.error(e.getMessage(), e);
                     }
                 }
             } catch (RegistryException e) {
-                log.error("RegistryException while getting artifacts for  " + tenant.getDomain() , e);
+                log.error("RegistryException while getting artifacts for  " + tenant.getDomain(), e);
             } catch (Exception e) {
                 log.error(e.getMessage(), e);
             } finally {
