@@ -17,15 +17,20 @@
 package org.wso2.carbon.apimgt.migration.client;
 
 import org.wso2.carbon.user.api.UserStoreException;
-
 import java.sql.SQLException;
 
 /**
  * Public interface for all migrations
  *
  */
+@SuppressWarnings("unused")
 public interface MigrationClient {
 
+    /**
+     * This method is used to migrate database resources
+     *
+     * @throws SQLException
+     */
     public void databaseMigration() throws SQLException;
 
     /**
@@ -36,9 +41,19 @@ public interface MigrationClient {
      */
     public void swaggerResourceMigration() throws UserStoreException, InterruptedException;
 
+    /**
+     * This method is used to migrate registry resources
+     *
+     * @throws UserStoreException
+     */
     public void registryMigration() throws UserStoreException;
 
     public void rxtMigration();
 
+    /**
+     * This method is used to clean old resources from registry
+     *
+     * @throws UserStoreException
+     */
     public void cleanOldResources() throws UserStoreException;
 }
