@@ -1,3 +1,19 @@
+/*
+ *  Copyright WSO2 Inc.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package org.wso2.carbon.apimgt.migration.client.internal;
 
 import org.apache.commons.logging.Log;
@@ -5,10 +21,6 @@ import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.ComponentContext;
 import org.wso2.carbon.apimgt.impl.APIManagerConfigurationService;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
-//import org.wso2.carbon.apimgt.migration.DocFileMigration;
-//import org.wso2.carbon.apimgt.migration.Swagger18Migration;
-//import org.wso2.carbon.apimgt.migration.Swagger19Migration;
-//import org.wso2.carbon.apimgt.migration.SwaggerResMigration;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom16to17;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom17to18;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom18to19;
@@ -17,6 +29,8 @@ import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.registry.core.service.TenantRegistryLoader;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.service.RealmService;
+
+import java.sql.SQLException;
 
 
 /**
@@ -122,6 +136,7 @@ public class APIMMigrationServiceComponent {
 
                 //Database Migration
                 log.info("Migrating WSO2 API Manager 1.8.0 databases to WSO2 API Manager 1.9.0");
+                migrateFrom18to19.databaseMigration();
 
                 //Swagger Resource Migration
                 log.info("Migrating WSO2 API Manager 1.8.0 swagger resources to WSO2 API Manager 1.9.0");
@@ -129,10 +144,13 @@ public class APIMMigrationServiceComponent {
 
                 //Registry Migration
                 log.info("Migrating WSO2 API Manager 1.8.0 registry resources to WSO2 API Manager 1.9.0");
+                migrateFrom18to19.registryMigration();
 
                 //Rxt Migration
                 log.info("Migrating WSO2 API Manager 1.8.0 Rxt resources to WSO2 API Manager 1.9.0");
+                migrateFrom18to19.rxtMigration();
 
+                //Old resource cleanup
                 if(cleanupNeeded) {
                     migrateFrom18to19.cleanOldResources();
                     log.info("Old resources cleaned up.");
@@ -145,6 +163,8 @@ public class APIMMigrationServiceComponent {
                 log.error("User store exception occurred while migrating " + e.getMessage());
             } catch (InterruptedException e) {
                 log.error("Interrupted exception occurred while migrating " + e.getMessage());
+            } catch (SQLException e) {
+                log.error("SQL exception occurred while migrating database" + e.getMessage());
             }
         }
         log.info("WSO2 API Manager migration completed successfully");

@@ -28,6 +28,7 @@ import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.api.model.URITemplate;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
+import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.migration.client.internal.ServiceHolder;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
 import org.wso2.carbon.apimgt.migration.client.util.ResourceUtil;
@@ -49,6 +50,10 @@ import org.wso2.carbon.user.core.tenant.TenantManager;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -60,9 +65,11 @@ import java.util.Set;
 public class MigrateFrom18to19 implements MigrationClient {
 
     private static final Log log = LogFactory.getLog(MigrateFrom18to19.class);
-    @Override
-    public void databaseMigration() {
 
+
+    @Override
+    public void databaseMigration() throws SQLException {
+        log.info("No database changes found for API Manager 1.9.0 migration.");
     }
 
     @Override
@@ -74,7 +81,6 @@ public class MigrateFrom18to19 implements MigrationClient {
         if(log.isDebugEnabled()){
             log.debug("Tenant array loaded successfully");
         }
-
 
         // Add  super tenant to the tenant array
         Tenant[] allTenantsArray = Arrays.copyOf(tenantsArray, tenantsArray.length + 1);
@@ -165,13 +171,13 @@ public class MigrateFrom18to19 implements MigrationClient {
                 PrivilegedCarbonContext.endTenantFlow();
             }
         }
-        log.debug("Migration done for all the tenants");
+        log.debug("Swagger resource migration done for all the tenants");
     }
 
 
     @Override
     public void registryMigration() {
-
+        log.info("No registry changes found for API Manager 1.9.0 migration.");
     }
 
     @Override

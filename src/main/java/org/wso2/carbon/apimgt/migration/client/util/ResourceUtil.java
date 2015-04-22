@@ -1,9 +1,25 @@
+/*
+ *  Copyright WSO2 Inc.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package org.wso2.carbon.apimgt.migration.client.util;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverPropertyInfo;
+import java.sql.SQLException;
+import java.util.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -12,10 +28,15 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.wso2.carbon.apimgt.impl.APIConstants;
+import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.registry.core.Registry;
 import org.wso2.carbon.registry.core.RegistryConstants;
 import org.wso2.carbon.registry.core.Resource;
+import org.wso2.carbon.registry.core.config.DataBaseConfiguration;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
+import org.wso2.carbon.utils.CarbonUtils;
+
+import javax.sql.DataSource;
 
 public class ResourceUtil {
 
@@ -500,4 +521,22 @@ public class ResourceUtil {
                 apiName + "-" + apiVersion + RegistryConstants.PATH_SEPARATOR + APIConstants.API_DOC_RESOURCE_NAME;
     }
 
+
+    public static String getDatabaseDriverName() throws SQLException {
+        Connection connection = APIMgtDBUtil.getConnection();
+        String databaseType;
+
+        if (connection.getMetaData().getDriverName().contains("MySQL")) {
+            databaseType = "MYSQL";
+        } else if (connection.getMetaData().getDriverName().contains("MS SQL") || connection.getMetaData().getDriverName().contains("Microsoft")) {
+            databaseType = "MSSQL";
+        } else if (connection.getMetaData().getDriverName().contains("H2")) {
+            databaseType = "H2";
+        } else if (connection.getMetaData().getDriverName().contains("PostgreSQL")) {
+            databaseType = "POSTGRESQL";
+        } else {
+            databaseType = "ORACLE";
+        }
+        return databaseType;
+    }
 }

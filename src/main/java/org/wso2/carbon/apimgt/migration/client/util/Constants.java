@@ -1,8 +1,20 @@
+/*
+ *  Copyright WSO2 Inc.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package org.wso2.carbon.apimgt.migration.client.util;
 
-/**
- * Created by Maduz on 4/21/15.
- */
 public class Constants {
     /*
 	 * Variables in api_doc.json version 1.1
@@ -81,7 +93,9 @@ public class Constants {
     public static final String API_RESOURCE_JSON_TEMPALTE = "{\n    \"apiVersion\": \"\",\n    \"swaggerVersion\": \"1.2\",\n    \"resourcePath\":\"\",\n    \"apis\": [] \n}";
 
 
+
     //constants for swagger v2
+
     //default Swagger v2 response parameter
     public static final String DEFAULT_RESPONSE = "{ " +
             "\"200\": "
@@ -104,4 +118,14 @@ public class Constants {
             "\"title\" : \"\", " +
             "\"version\" : \"\"" +
             "}";
+
+    //Database migration queries for 1.8.0 to 1.9.0 migration
+    public static final String H2_QUERY = "ALTER TABLE AM_SUBSCRIPTION ADD SUBS_CREATE_STATE VARCHAR(50) DEFAULT 'SUBSCRIBE';";
+    public static final String MSSQL_QUERY = "ALTER TABLE AM_SUBSCRIPTION ADD SUBS_CREATE_STATE VARCHAR(50) DEFAULT 'SUBSCRIBE';";
+    public static final String MYSQL_QUERY = "ALTER TABLE AM_SUBSCRIPTION ADD COLUMN SUBS_CREATE_STATE VARCHAR(50) DEFAULT 'SUBSCRIBE';";
+    public static final String ORACLE_QUERY = "ALTER TABLE AM_APPLICATION GROUP_ID VARCHAR(100);";
+    public static final String POSTGRESQL_QUERY = "ALTER TABLE AM_SUBSCRIPTION ADD COLUMN SUBS_CREATE_STATE VARCHAR(50) DEFAULT 'SUBSCRIBE';";
+
+
+
 }
