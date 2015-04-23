@@ -46,6 +46,7 @@ import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.tenant.TenantManager;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -59,24 +60,12 @@ public class MigrateFrom17to18 implements MigrationClient {
     private static final Log log = LogFactory.getLog(MigrateFrom17to18.class);
 
     @Override
-    public void databaseMigration() throws SQLException {
-        /*String databaseDriverName = ResourceUtil.getDatabaseDriverName();
-        String queryToExecute;
+    public void databaseMigration(String migrateVersion) throws SQLException, APIManagementException, IOException {
+        log.info("Database migration for API Manager 1.8.0 started");
+        String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion);
 
         Connection connection = APIMgtDBUtil.getConnection();
         connection.setAutoCommit(false);
-
-        if (databaseDriverName.equalsIgnoreCase("mysql")) {
-            queryToExecute = Constants.MYSQL_QUERY_17_TO_18;
-        } else if (databaseDriverName.equalsIgnoreCase("mssql")) {
-            queryToExecute = Constants.MSSQL_QUERY_17_TO_18;
-        } else if (databaseDriverName.equalsIgnoreCase("h2")) {
-            queryToExecute = Constants.H2_QUERY_17_TO_18;
-        } else if (databaseDriverName.contains("postgresql")) {
-            queryToExecute = Constants.POSTGRESQL_QUERY_17_TO_18;
-        } else {
-            queryToExecute = Constants.ORACLE_QUERY_17_TO_18;
-        }
 
         PreparedStatement preparedStatement = connection.prepareStatement(queryToExecute);
         boolean isUpdated = preparedStatement.execute();
@@ -88,12 +77,11 @@ public class MigrateFrom17to18 implements MigrationClient {
         preparedStatement.close();
 
         if (log.isDebugEnabled()) {
-            log.debug("Query " + queryToExecute + " executed on " + databaseDriverName);
+            log.debug("Query " + queryToExecute + " executed ");
         }
 
         connection.close();
         log.info("DB resource migration done for all the tenants");
-*/
     }
 
     @Override

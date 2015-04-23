@@ -16,7 +16,10 @@
 
 package org.wso2.carbon.apimgt.migration.client;
 
+import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.user.api.UserStoreException;
+
+import java.io.IOException;
 import java.sql.SQLException;
 
 /**
@@ -31,7 +34,7 @@ public interface MigrationClient {
      *
      * @throws SQLException
      */
-    public void databaseMigration() throws SQLException;
+    public void databaseMigration(String migrateVersion) throws SQLException, APIManagementException, IOException;
 
     /**
      * This method is used to migrate swagger resources

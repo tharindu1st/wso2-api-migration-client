@@ -58,8 +58,7 @@ public class MigrateFrom16to17 implements MigrationClient {
 
     private static final Log log = LogFactory.getLog(MigrateFrom16to17.class);
 
-    @Override
-    public void databaseMigration() throws SQLException {
+
         /*String databaseDriverName = ResourceUtil.getDatabaseDriverName();
         String queryToExecute;
 
@@ -91,6 +90,10 @@ public class MigrateFrom16to17 implements MigrationClient {
 
         connection.close();
         log.info("DB resource migration done for all the tenants");*/
+
+
+    @Override
+    public void databaseMigration(String migrateVersion) throws SQLException {
 
     }
 
