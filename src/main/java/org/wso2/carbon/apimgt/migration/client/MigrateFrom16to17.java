@@ -60,7 +60,7 @@ public class MigrateFrom16to17 implements MigrationClient {
 
     @Override
     public void databaseMigration() throws SQLException {
-        String databaseDriverName = ResourceUtil.getDatabaseDriverName();
+        /*String databaseDriverName = ResourceUtil.getDatabaseDriverName();
         String queryToExecute;
 
         Connection connection = APIMgtDBUtil.getConnection();
@@ -90,7 +90,7 @@ public class MigrateFrom16to17 implements MigrationClient {
         }
 
         connection.close();
-        log.info("DB resource migration done for all the tenants");
+        log.info("DB resource migration done for all the tenants");*/
 
     }
 
