@@ -63,8 +63,9 @@ public class MigrateFrom18to19 implements MigrationClient {
     private static final Log log = LogFactory.getLog(MigrateFrom18to19.class);
 
 
+
     @Override
-    public void databaseMigration() throws SQLException {
+    public void databaseMigration(String migrateVersion) throws SQLException {
         log.info("No database changes found for API Manager 1.9.0 migration.");
     }
 

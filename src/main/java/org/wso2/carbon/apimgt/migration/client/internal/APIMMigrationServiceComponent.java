@@ -19,6 +19,7 @@ package org.wso2.carbon.apimgt.migration.client.internal;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.ComponentContext;
+import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.impl.APIManagerConfigurationService;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom16to17;
@@ -30,6 +31,7 @@ import org.wso2.carbon.registry.core.service.TenantRegistryLoader;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.service.RealmService;
 
+import java.io.IOException;
 import java.sql.SQLException;
 
 
@@ -81,7 +83,7 @@ public class APIMMigrationServiceComponent {
 
                 //Database Migration
                 log.info("Migrating WSO2 API Manager 1.6.0 databases to WSO2 API Manager 1.7.0");
-                migrateFrom16to17.databaseMigration();
+                migrateFrom16to17.databaseMigration(migrateVersion);
 
                 //Swagger Resource Migration
                 log.info("Migrating WSO2 API Manager 1.6.0 swagger resources to WSO2 API Manager 1.7.0");
@@ -110,6 +112,7 @@ public class APIMMigrationServiceComponent {
 
                 //Database Migration
                 log.info("Migrating WSO2 API Manager 1.7.0 databases to WSO2 API Manager 1.8.0");
+                migrateFrom17to18.databaseMigration(migrateVersion);
 
                 //Swagger Resource Migration
                 log.info("Migrating WSO2 API Manager 1.7.0 swagger resources to WSO2 API Manager 1.8.0");
@@ -129,6 +132,12 @@ public class APIMMigrationServiceComponent {
                 log.error("User store exception occurred while migrating " + e.getMessage());
             } catch (InterruptedException e) {
                 log.error("Interrupted exception occurred while migrating " + e.getMessage());
+            } catch (SQLException e) {
+                log.error("SQL exception occurred while migrating " + e.getMessage());
+            } catch (IOException e) {
+                log.error("IO exception occurred while migrating " + e.getMessage());
+            } catch (APIManagementException e) {
+                log.error("APIManagementException occurred while migrating " + e.getMessage());
             }
 
         } else if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
@@ -139,7 +148,7 @@ public class APIMMigrationServiceComponent {
 
                 //Database Migration
                 log.info("Migrating WSO2 API Manager 1.8.0 databases to WSO2 API Manager 1.9.0");
-                migrateFrom18to19.databaseMigration();
+                migrateFrom18to19.databaseMigration(migrateVersion);
 
                 //Swagger Resource Migration
                 log.info("Migrating WSO2 API Manager 1.8.0 swagger resources to WSO2 API Manager 1.9.0");

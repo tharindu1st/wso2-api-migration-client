@@ -15,28 +15,30 @@
  */
 package org.wso2.carbon.apimgt.migration.client.util;
 
+import java.io.InputStream;
 import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.carbon.apimgt.impl.internal.APIManagerComponent;
+import org.wso2.carbon.utils.FileUtil;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.registry.core.Registry;
 import org.wso2.carbon.registry.core.RegistryConstants;
 import org.wso2.carbon.registry.core.Resource;
-import org.wso2.carbon.registry.core.config.DataBaseConfiguration;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
-import org.wso2.carbon.utils.CarbonUtils;
 
-import javax.sql.DataSource;
+import java.io.IOException;
+import org.apache.commons.io.IOUtils;
+import org.wso2.carbon.utils.CarbonUtils;
 
 @SuppressWarnings("unchecked , unused")
 public class ResourceUtil {
@@ -49,7 +51,7 @@ public class ResourceUtil {
      *
      * @param resource api-doc which contains swagger 1.1 info
      * @return map of parameter array related to all the http methods for each resource.
-     *      the key for the map is resourcepath_httpmethod
+     * the key for the map is resourcepath_httpmethod
      */
     public static Map<String, JSONArray> getAllParametersForResources(JSONObject resource) {
         Map<String, JSONArray> parameters = new HashMap<String, JSONArray>();
@@ -84,11 +86,11 @@ public class ResourceUtil {
     /**
      * Get all the operation object related to each resource. Method is inside the operation object
      * this object contains the nickname, description related to that resource method
-     * @param resource
-     *            api-doc which contains swagger 1.1 info
+     *
+     * @param resource api-doc which contains swagger 1.1 info
      * @return map of operations array related to all the http methods for each
-     *         resource. the key for
-     *         the map is resourcepath_httpmethod
+     * resource. the key for
+     * the map is resourcepath_httpmethod
      */
     private static Map<String, JSONObject> getAllOperationsForResources(JSONObject resource) {
         Map<String, JSONObject> parameters = new HashMap<String, JSONObject>();
@@ -126,6 +128,7 @@ public class ResourceUtil {
 
         return parameters;
     }
+
     /**
      * Get all the apis as a map. key for map is the full resource path for that api. key is created
      * using 'basepath + apis[i].path' values in the api-doc.json file (swagger 1.1 doc)
@@ -171,15 +174,12 @@ public class ResourceUtil {
      * parameters to operations element, add 'nickname' variable and the
      * 'basePath' variable
      *
-     * @param resource
-     *            resource inside the 1.2 location
-     * @param allParameters
-     *            map containing all the parameters extracted from api-doc
-     *            containing
-     *            resources for swagger 1.1
+     * @param resource      resource inside the 1.2 location
+     * @param allParameters map containing all the parameters extracted from api-doc
+     *                      containing
+     *                      resources for swagger 1.1
      * @param allOperations
-     * @param basePath
-     *            base path for the resource
+     * @param basePath      base path for the resource
      * @return modified resource for the api
      */
     public static String getUpdatedSwagger12Resource(JSONObject resource,
@@ -208,9 +208,9 @@ public class ResourceUtil {
                     parameters = allParameters.get(key);
 
                     //setting the 'type' to 'string' if this variable is missing
-                    for(int m = 0; m < parameters.size(); m++ ){
-                        JSONObject para = (JSONObject)parameters.get(m);
-                        if(!para.containsKey("type")){
+                    for (int m = 0; m < parameters.size(); m++) {
+                        JSONObject para = (JSONObject) parameters.get(m);
+                        if (!para.containsKey("type")) {
                             para.put("type", "string");
                         }
                     }
@@ -221,11 +221,11 @@ public class ResourceUtil {
                 }
                 //if there are parameters already in this
                 JSONArray existingParams = (JSONArray) operation.get(Constants.API_DOC_12_PARAMETERS);
-                if(existingParams.isEmpty()) {
+                if (existingParams.isEmpty()) {
                     JSONParser parser = new JSONParser();
-                    if(path.contains("{")) {
+                    if (path.contains("{")) {
                         List<String> urlParams = ResourceUtil.getURLTemplateParams(path);
-                        for(String p: urlParams){
+                        for (String p : urlParams) {
                             try {
                                 JSONObject paramObj = (JSONObject) parser.parse(Constants.DEFAULT_PARAM_FOR_URL_TEMPLATE);
                                 paramObj.put("name", p);
@@ -239,19 +239,19 @@ public class ResourceUtil {
                     // add parameters array
                     operation.put(Constants.API_DOC_12_PARAMETERS, parameters);
                 } else {
-                    for(int k = 0; k < existingParams.size(); k ++ ) {
+                    for (int k = 0; k < existingParams.size(); k++) {
                         parameters.add(existingParams.get(k));
                     }
                     operation.put(Constants.API_DOC_12_PARAMETERS, parameters);
                 }
 
                 //updating the resource description and nickname using values in the swagger 1.1 doc
-                if(allOperations.containsKey(key)){
+                if (allOperations.containsKey(key)) {
 
                     //update info related to object
                     JSONObject operationObj11 = allOperations.get(key);
                     //add summery
-                    if(operationObj11.containsKey("summary")) {
+                    if (operationObj11.containsKey("summary")) {
                         operation.put("summary", operationObj11.get("summery"));
                     }
 
@@ -267,6 +267,7 @@ public class ResourceUtil {
 
     /**
      * location for the swagger 1.2 resources
+     *
      * @param apiName
      * @param apiVersion
      * @param apiProvider
@@ -282,6 +283,7 @@ public class ResourceUtil {
 
     /**
      * update all the the swagger document in the registry related to an api
+     *
      * @param apiDocJson
      * @param docResourcePaths
      * @param re
@@ -306,7 +308,6 @@ public class ResourceUtil {
         // api-doc in 1.2 resource folder. following map collects this value from api-doc 1.1 and
         // store it to add to api-doc 1.2
         Map<String, String> descriptionsForResource = new HashMap<String, String>();
-
 
 
         String basePath = (String) apiDoc11.get(Constants.API_DOC_11_BASE_PATH);
@@ -348,7 +349,7 @@ public class ResourceUtil {
 
 
             //get the description for that resource. query the api list generated using api-doc 1.1
-            if(apisByPath.containsKey(key)) {
+            if (apisByPath.containsKey(key)) {
                 JSONObject apiInfo = apisByPath.get(key);
                 description = (String) apiInfo.get("description");
                 descriptionsForResource.put(resourceName, description);
@@ -371,9 +372,9 @@ public class ResourceUtil {
     }
 
 
-
     /**
      * update the swagger 1.2 api-doc. This method updates the descriptions
+     *
      * @param apidoc12path
      * @param descriptionsForResource
      * @param re
@@ -407,6 +408,7 @@ public class ResourceUtil {
 
     /**
      * remove header and body parameters
+     *
      * @param docResourcePaths
      * @param registry
      * @throws RegistryException
@@ -473,6 +475,7 @@ public class ResourceUtil {
 
     /**
      * extract the parameters from the url tempate.
+     *
      * @param url
      * @return
      */
@@ -480,19 +483,19 @@ public class ResourceUtil {
         boolean endVal = false;
 
         List<String> params = new ArrayList<String>();
-        if(url.contains("{")){
+        if (url.contains("{")) {
 
             int start = 0;
             int end = 0;
-            for(int i = 0; i < url.length(); i++) {
-                if(url.charAt(i) == '{')
+            for (int i = 0; i < url.length(); i++) {
+                if (url.charAt(i) == '{')
                     start = i;
-                else if(url.charAt(i) == '}') {
+                else if (url.charAt(i) == '}') {
                     end = i;
                     endVal = true;
                 }
 
-                if(endVal){
+                if (endVal) {
                     params.add(url.substring(start + 1, end));
                     endVal = false;
                 }
@@ -513,7 +516,7 @@ public class ResourceUtil {
     public static String getSwagger2ResourceLocation(String apiName, String apiVersion,
                                                      String apiProvider) {
         return
-                APIConstants.API_ROOT_LOCATION + RegistryConstants.PATH_SEPARATOR +  apiProvider +
+                APIConstants.API_ROOT_LOCATION + RegistryConstants.PATH_SEPARATOR + apiProvider +
                         RegistryConstants.PATH_SEPARATOR + apiName + RegistryConstants.PATH_SEPARATOR + apiVersion + RegistryConstants.PATH_SEPARATOR + "swagger.json";
     }
 
@@ -545,5 +548,50 @@ public class ResourceUtil {
             databaseType = "ORACLE";
         }
         return databaseType;
+    }
+
+    public static String pickQueryFromResources(String migrateVersion) throws SQLException, APIManagementException, IOException {
+        String databaseType = getDatabaseDriverName();
+        String queryTobeExecuted = null;
+        String resourcePath;
+
+        if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
+
+            //pick from 18to19Migration/sql-scripts
+            resourcePath = "/18to19Migration/sql-scripts/";
+
+        } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
+            //pick from 17to18Migration/sql-scripts
+            resourcePath = "/17to18Migration/sql-scripts/";
+        } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
+            //pick from 16to17Migration/sql-scripts
+            resourcePath = "/16to17Migration/sql-scripts/";
+        } else {
+            throw new APIManagementException("No query picked up for the given migrate version. Please check the migrate version.");
+        }
+
+        if (!resourcePath.equals("")) {
+            InputStream inputStream;
+            //String bamProfile = IOUtils.toString(inputStream);
+            try {
+                if (databaseType.equalsIgnoreCase("MYSQL")) {
+                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "mysql.sql");
+                } else if (databaseType.equalsIgnoreCase("MSSQL")) {
+                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "mssql.sql");
+                } else if (databaseType.equalsIgnoreCase("H2")) {
+                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "h2.sql");
+                } else if (databaseType.equalsIgnoreCase("ORACLE")) {
+                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "oracle.sql");
+                } else {
+                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "postgresql.sql");
+                }
+
+                queryTobeExecuted = IOUtils.toString(inputStream);
+
+            } catch (IOException e) {
+                throw new IOException("Error occurred while accessing the sql from resources. " + e);
+            }
+        }
+        return queryTobeExecuted;
     }
 }
