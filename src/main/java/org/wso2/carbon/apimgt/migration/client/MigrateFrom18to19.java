@@ -28,6 +28,7 @@ import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.api.model.URITemplate;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
+import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.migration.client.internal.ServiceHolder;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
 import org.wso2.carbon.apimgt.migration.client.util.ResourceUtil;
@@ -107,7 +108,7 @@ public class MigrateFrom18to19 implements MigrationClient {
                 for (GenericArtifact artifact : artifacts) {
                     API api;
                     try {
-                        api = getAPI(artifact, registry);
+                        api = APIUtil.getAPI(artifact, registry);
 
                         APIIdentifier apiIdentifier = api.getId();
                         String apiName = apiIdentifier.getApiName();
@@ -220,7 +221,7 @@ public class MigrateFrom18to19 implements MigrationClient {
                 for (GenericArtifact artifact : artifacts) {
                     API api;
                     try {
-                        api = getAPI(artifact, registry);
+                        api = APIUtil.getAPI(artifact, registry);
 
                         APIIdentifier apiIdentifier = api.getId();
                         String apiName = apiIdentifier.getApiName();
@@ -260,7 +261,7 @@ public class MigrateFrom18to19 implements MigrationClient {
      * @return API object
      * @throws APIManagementException
      */
-    public static API getAPI(GovernanceArtifact artifact, Registry registry)
+    /*public static API getAPI(GovernanceArtifact artifact, Registry registry)
             throws APIManagementException {
 
         API api;
@@ -297,7 +298,7 @@ public class MigrateFrom18to19 implements MigrationClient {
             throw new APIManagementException(errorMsg, e);
         }
         return api;
-    }
+    }*/
 
     /**
      * Generates swagger v2 doc using swagger 1.2 doc

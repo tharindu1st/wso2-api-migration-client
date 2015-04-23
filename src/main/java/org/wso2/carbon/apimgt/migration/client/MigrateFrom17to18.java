@@ -122,7 +122,7 @@ public class MigrateFrom17to18 implements MigrationClient {
                 for (GenericArtifact artifact : artifacts) {
                     API api;
                     try {
-                        api = getAPI(artifact, registry);
+                        api = APIUtil.getAPI(artifact, registry);
 
                         //API api = APIUtil.getAPI(artifact);
                         APIIdentifier apiIdentifier = api.getId();
@@ -208,7 +208,7 @@ public class MigrateFrom17to18 implements MigrationClient {
      * @return api object according to the given api artifact
      * @throws APIManagementException
      */
-    public static API getAPI(GovernanceArtifact artifact, Registry registry)
+    /*public static API getAPI(GovernanceArtifact artifact, Registry registry)
             throws APIManagementException {
 
         API api;
@@ -240,5 +240,5 @@ public class MigrateFrom17to18 implements MigrationClient {
             throw new APIManagementException(msg, e);
         }
         return api;
-    }
+    }*/
 }
