@@ -72,7 +72,7 @@ public class APIMMigrationServiceComponent {
             cleanupNeeded = Boolean.parseBoolean(System.getProperty("cleanup"));
         }
 
-        log.info("All the APIs will migrate to " + migrateVersion + ".0");
+
         if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
             log.info("Migrating WSO2 API Manager 1.6 swagger and documentation resources to WSO2 API Manager 1.7");
             try {
@@ -81,6 +81,7 @@ public class APIMMigrationServiceComponent {
 
                 //Database Migration
                 log.info("Migrating WSO2 API Manager 1.6.0 databases to WSO2 API Manager 1.7.0");
+                migrateFrom16to17.databaseMigration();
 
                 //Swagger Resource Migration
                 log.info("Migrating WSO2 API Manager 1.6.0 swagger resources to WSO2 API Manager 1.7.0");
@@ -97,6 +98,8 @@ public class APIMMigrationServiceComponent {
                 }
             } catch (UserStoreException e) {
                 log.error("User store exception occurred while migrating " + e.getMessage());
+            } catch (SQLException e) {
+                log.error("SQL exception occurred while migrating " + e.getMessage());
             }
 
         } else if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
@@ -167,7 +170,7 @@ public class APIMMigrationServiceComponent {
                 log.error("SQL exception occurred while migrating database" + e.getMessage());
             }
         }
-        log.info("WSO2 API Manager migration completed successfully");
+        log.info("WSO2 API Manager migration component successfully activated.");
     }
 
     /**
