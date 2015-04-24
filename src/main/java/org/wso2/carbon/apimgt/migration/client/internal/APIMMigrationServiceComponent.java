@@ -25,6 +25,7 @@ import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom16to17;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom17to18;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom18to19;
+import org.wso2.carbon.apimgt.migration.client.MigrationClient;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
 import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.registry.core.service.TenantRegistryLoader;
@@ -174,9 +175,9 @@ public class APIMMigrationServiceComponent {
             } catch (UserStoreException e) {
                 log.error("User store exception occurred while migrating " + e.getMessage());
             } catch (InterruptedException e) {
-                log.error("Interrupted exception occurred while migrating " + e.getMessage());
+                e.printStackTrace();
             } catch (SQLException e) {
-                log.error("SQL exception occurred while migrating database" + e.getMessage());
+                e.printStackTrace();
             }
         }
         log.info("WSO2 API Manager migration component successfully activated.");

@@ -59,4 +59,16 @@ public interface MigrationClient {
      * @throws UserStoreException
      */
     public void cleanOldResources() throws UserStoreException;
+
+    /**
+     * This method used to add and replace the sequences in file system
+     */
+    public  void sequenceMigration();
+
+    /**
+     * This method used to execute migration
+     */
+    public void migrate();
+
+    public void synapseAPIMigration();
 }
