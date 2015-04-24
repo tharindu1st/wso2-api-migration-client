@@ -192,6 +192,18 @@ public class MigrateFrom17to18 implements MigrationClient {
 
     }
 
+    @Override public void sequenceMigration() {
+
+    }
+
+    @Override public void migrate() {
+
+    }
+
+    @Override public void synapseAPIMigration() {
+
+    }
+
     /**
      * This method returns API object
      *

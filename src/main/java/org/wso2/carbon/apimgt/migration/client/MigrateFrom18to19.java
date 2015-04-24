@@ -16,6 +16,7 @@
 
 package org.wso2.carbon.apimgt.migration.client;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.simple.JSONArray;
@@ -32,6 +33,7 @@ import org.wso2.carbon.apimgt.migration.client.util.Constants;
 import org.wso2.carbon.apimgt.migration.client.util.ResourceUtil;
 import org.wso2.carbon.base.MultitenantConstants;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
+import org.wso2.carbon.governance.api.exception.GovernanceException;
 import org.wso2.carbon.governance.api.generic.GenericArtifactManager;
 import org.wso2.carbon.governance.api.generic.dataobjects.GenericArtifact;
 import org.wso2.carbon.governance.api.util.GovernanceUtils;
@@ -43,6 +45,13 @@ import org.wso2.carbon.registry.core.session.UserRegistry;
 import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.tenant.TenantManager;
+import org.wso2.carbon.utils.CarbonUtils;
+import org.wso2.carbon.utils.FileUtil;
+import org.wso2.carbon.utils.IOStreamUtils;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -51,13 +60,22 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.*;
 
 @SuppressWarnings("unchecked")
 public class MigrateFrom18to19 implements MigrationClient {
 
     private static final Log log = LogFactory.getLog(MigrateFrom18to19.class);
+    TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
+    List<Tenant> tenantsArray;
 
-
+    public MigrateFrom18to19() throws UserStoreException {
+        tenantsArray = new ArrayList(Arrays.asList(tenantManager.getAllTenants()));
+        Tenant superTenant = new Tenant();
+        superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
+        superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
+        tenantsArray.add(superTenant);
+    }
 
     @Override
     public void databaseMigration(String migrateVersion) throws SQLException {
@@ -247,7 +265,106 @@ public class MigrateFrom18to19 implements MigrationClient {
         }
     }
 
-    /**
+    @Override
+    public void sequenceMigration() {
+        String repository = CarbonUtils.getCarbonRepository();
+        String TenantRepo = CarbonUtils.getCarbonTenantsDirPath();
+        for (Tenant tenant : tenantsArray) {
+            String SequenceFilePath;
+            if (tenant.getId() != MultitenantConstants.SUPER_TENANT_ID) {
+                SequenceFilePath = TenantRepo +"/"+ tenant.getId() +
+                                   "/synapse-configs/default/sequences/";
+            } else {
+                SequenceFilePath = repository + "synapse-configs/default/sequences/";
+            }
+            try {
+                FileUtils.copyInputStreamToFile(MigrateFrom18to19.class.getResourceAsStream(
+                                                        "/18to19Migration/sequence-scripts/_cors_request_handler.xml"),
+                                                new File(SequenceFilePath + "_cors_request_handler.xml"));
+                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_auth_failure_handler_");
+                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_throttle_out_handler_");
+                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_token_fault_");
+                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "fault");
+            } catch (IOException e) {
+                log.error("File couldn't found", e);
+            }
+        }
+    }
+
+    @Override public void migrate() {
+        sequenceMigration();
+        synapseAPIMigration();
+    }
+
+    @Override public void synapseAPIMigration() {
+        String repository = CarbonUtils.getCarbonRepository();
+        String tenantRepository = CarbonUtils.getCarbonTenantsDirPath();
+        for (Tenant tenant : tenantsArray) {
+            try {
+                String SequenceFilePath;
+                if (tenant.getId() != MultitenantConstants.SUPER_TENANT_ID) {
+                    SequenceFilePath = tenantRepository + "/" + tenant.getId() +
+                                       "/synapse-configs/default/api";
+                } else {
+                    SequenceFilePath = repository + "synapse-configs/default/api";
+                }
+                File APIFiles = new File(SequenceFilePath);
+                File[] synapseFiles = APIFiles.listFiles();
+                PrivilegedCarbonContext.startTenantFlow();
+                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
+                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenant.getId());
+                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(
+                        tenant.getId()).getRealmConfiguration().getAdminUserName();
+                ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
+                Registry registry =
+                        ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant.getId());
+                GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
+                GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
+                GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
+                for (GenericArtifact artifact : artifacts) {
+                    API api = APIUtil.getAPI(artifact, registry);
+                    APIIdentifier apiIdentifier = api.getId();
+                    String implementationType = api.getImplementation();
+                    String qualifiedName = apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName() + ":v" +
+                                           apiIdentifier.getVersion();
+                    String qualifiedDefaultApiName =
+                            apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName();
+                    File synapseFile = null, defaultSynapseFile = null;
+                    for (File file : synapseFiles) {
+                        if (api.isDefaultVersion()) {
+                            if ((qualifiedDefaultApiName + ".xml").equals(file.getName())) {
+                                defaultSynapseFile = file;
+                            }
+                        }
+                        if ((qualifiedName + ".xml").equals(file.getName())) {
+                            synapseFile = file;
+                        }
+                        break;
+                    }
+                    if(synapseFile != null){
+                        ResourceUtil.updateSynapseAPI(synapseFile,implementationType);
+                    }
+                    if(defaultSynapseFile != null){
+                        ResourceUtil.updateSynapseAPI(defaultSynapseFile,implementationType);
+                    }
+                }
+
+            } catch (UserStoreException e) {
+                e.printStackTrace();
+            } catch (GovernanceException e) {
+                e.printStackTrace();
+            } catch (RegistryException e) {
+                e.printStackTrace();
+            } catch (APIManagementException e) {
+                e.printStackTrace();
+            } finally {
+                PrivilegedCarbonContext.endTenantFlow();
+            }
+        }
+    }
+
+
+            /**
      * This method is used to read the api from the registry
      *
      * @param artifact api artifact
