@@ -18,7 +18,6 @@ package org.wso2.carbon.apimgt.migration.client;
 
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.user.api.UserStoreException;
-
 import java.io.IOException;
 import java.sql.SQLException;
 
