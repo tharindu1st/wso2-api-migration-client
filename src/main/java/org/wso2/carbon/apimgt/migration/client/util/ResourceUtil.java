@@ -15,6 +15,7 @@
  */
 package org.wso2.carbon.apimgt.migration.client.util;
 
+import java.io.File;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -22,6 +23,10 @@ import java.util.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.wso2.carbon.apimgt.impl.internal.APIManagerComponent;
 import org.wso2.carbon.utils.FileUtil;
 import org.json.simple.JSONArray;
@@ -39,6 +44,16 @@ import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import java.io.IOException;
 import org.apache.commons.io.IOUtils;
 import org.wso2.carbon.utils.CarbonUtils;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 @SuppressWarnings("unchecked , unused")
 public class ResourceUtil {
@@ -593,5 +608,77 @@ public class ResourceUtil {
             }
         }
         return queryTobeExecuted;
+    }
+
+    public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath,String sequenceName){
+        try {
+            String filePath = sequenceDirectoryFilePath+"/"+sequenceName+".xml";
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+            Document doc = docBuilder.parse(filePath);
+            Node sequence = doc.getFirstChild();
+            Element corsHandler = doc.createElement("sequence");
+            corsHandler.setAttribute("key", "_cors_request_handler");
+            if (!"_token_fault_".equals(sequenceName)||!"fault".equals(sequenceName)){
+                sequence.appendChild(corsHandler);
+            }else{
+            sequence.insertBefore(corsHandler,doc.getElementsByTagName("send").item(0));
+            }
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(doc);
+            StreamResult result = new StreamResult(new File(filePath));
+            transformer.transform(source, result);
+        } catch (ParserConfigurationException pce) {
+            pce.printStackTrace();
+        } catch (TransformerException tfe) {
+            tfe.printStackTrace();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        } catch (SAXException sae) {
+            sae.printStackTrace();
+        }
+    }
+    public static void updateSynapseAPI(File filePath,String implementation){
+        try {
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+            Document doc = null;
+            doc = docBuilder.parse(filePath.getAbsolutePath());
+            Node sequence = doc.getFirstChild();
+            //     <handler class="org.wso2.carbon.apimgt.gateway.handlers.security.CORSRequestHandler">
+            //   <property name="inline" value="endpoint"/>
+            // </handler>
+            // <handler class="org.wso2.carbon.apimgt.gateway.handlers.security.APIAuthenticationHandler"/>
+            Node handlers = doc.getElementsByTagName("handlers").item(0);
+            Element corsHandler = doc.createElement("handler");
+            corsHandler.setAttribute("class", "org.wso2.carbon.apimgt.gateway.handlers.security.CORSRequestHandler");
+            Element property = doc.createElement("property");
+            property.setAttribute("name", "inline");
+            property.setAttribute("value", implementation);
+            corsHandler.appendChild(property);
+            NodeList handlerNodes = doc.getElementsByTagName("handler");
+            for (int i =0 ;i<handlerNodes.getLength();i++){
+                Node tempNode = handlerNodes.item(i);
+                if ("org.wso2.carbon.apimgt.gateway.handlers.security.CORSRequestHandler"
+                        .equals(tempNode.getAttributes().getNamedItem("class").getTextContent())) {
+                    handlers.removeChild(tempNode);
+                }
+                handlers.insertBefore(corsHandler, handlerNodes.item(0));
+            }
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(doc);
+            StreamResult result = new StreamResult(filePath);
+            transformer.transform(source, result);
+    } catch (ParserConfigurationException pce) {
+        pce.printStackTrace();
+    } catch (TransformerException tfe) {
+        tfe.printStackTrace();
+    } catch (IOException ioe) {
+        ioe.printStackTrace();
+    } catch (SAXException sae) {
+        sae.printStackTrace();
+    }
     }
 }

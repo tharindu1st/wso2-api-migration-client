@@ -29,7 +29,6 @@ import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.api.model.Documentation;
 import org.wso2.carbon.apimgt.api.model.URITemplate;
 import org.wso2.carbon.apimgt.impl.APIConstants;
-import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.migration.client.internal.ServiceHolder;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
@@ -48,8 +47,6 @@ import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.tenant.TenantManager;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -98,6 +95,17 @@ public class MigrateFrom16to17 implements MigrationClient {
     }
 
     @Override
+    public void registryResourceMigration() throws UserStoreException {
+        swaggerResourceMigration();
+        registryMigration();
+        rxtMigration();
+    }
+
+    @Override
+    public void fileSystemMigration() {
+
+    }
+
     public void swaggerResourceMigration() throws UserStoreException {
         log.info("Swagger migration for API Manager 1.7.0 started");
 
@@ -187,7 +195,6 @@ public class MigrateFrom16to17 implements MigrationClient {
         }
     }
 
-    @Override
     public void registryMigration() throws UserStoreException {
         log.info("Registry migration for API Manager 1.7.0 started");
 
@@ -411,7 +418,6 @@ public class MigrateFrom16to17 implements MigrationClient {
         }
     }
 
-    @Override
     public void rxtMigration() {
 
     }
