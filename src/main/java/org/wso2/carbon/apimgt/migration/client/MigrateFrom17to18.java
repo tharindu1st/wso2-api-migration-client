@@ -77,6 +77,19 @@ public class MigrateFrom17to18 implements MigrationClient {
     }
 
     @Override
+    public void registryResourceMigration() throws UserStoreException, InterruptedException {
+        swaggerResourceMigration();
+        registryMigration();
+        rxtMigration();
+    }
+
+    @Override
+    public void fileSystemMigration() {
+        synapseAPIMigration();
+        sequenceMigration();
+    }
+
+
     public void swaggerResourceMigration() throws UserStoreException, InterruptedException {
         log.info("Swagger migration for API Manager 1.8.0 started");
 
@@ -177,12 +190,10 @@ public class MigrateFrom17to18 implements MigrationClient {
 
     }
 
-    @Override
     public void registryMigration() {
 
     }
 
-    @Override
     public void rxtMigration() {
 
     }
@@ -192,15 +203,12 @@ public class MigrateFrom17to18 implements MigrationClient {
 
     }
 
-    @Override public void sequenceMigration() {
+    public void sequenceMigration() {
 
     }
 
-    @Override public void migrate() {
 
-    }
-
-    @Override public void synapseAPIMigration() {
+    public void synapseAPIMigration() {
 
     }
 

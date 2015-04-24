@@ -27,6 +27,7 @@ import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.model.API;
 import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.impl.APIConstants;
+import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.migration.client.internal.ServiceHolder;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
@@ -55,6 +56,8 @@ import java.io.IOException;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -78,11 +81,43 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
     @Override
-    public void databaseMigration(String migrateVersion) throws SQLException {
-        log.info("No database changes found for API Manager 1.9.0 migration.");
+    public void databaseMigration(String migrateVersion) throws SQLException, APIManagementException, IOException {
+        log.info("Database migration for API Manager 1.8.0 started");
+        String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion);
+
+        Connection connection = APIMgtDBUtil.getConnection();
+        connection.setAutoCommit(false);
+
+        PreparedStatement preparedStatement = connection.prepareStatement(queryToExecute);
+        boolean isUpdated = preparedStatement.execute();
+        if (isUpdated) {
+            connection.commit();
+        } else {
+            connection.rollback();
+        }
+        preparedStatement.close();
+
+        if (log.isDebugEnabled()) {
+            log.debug("Query " + queryToExecute + " executed ");
+        }
+
+        connection.close();
+        log.info("DB resource migration done for all the tenants");
     }
 
     @Override
+    public void registryResourceMigration() throws UserStoreException, InterruptedException {
+        swaggerResourceMigration();
+        registryMigration();
+        rxtMigration();
+    }
+
+    @Override
+    public void fileSystemMigration() {
+        synapseAPIMigration();
+        sequenceMigration();
+    }
+
     public void swaggerResourceMigration() throws UserStoreException, InterruptedException {
         log.info("Swagger migration for API Manager 1.9.0 started");
 
@@ -185,12 +220,11 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
 
-    @Override
     public void registryMigration() {
         log.info("No registry changes found for API Manager 1.9.0 migration.");
     }
 
-    @Override
+
     public void rxtMigration() {
 
     }
@@ -265,7 +299,6 @@ public class MigrateFrom18to19 implements MigrationClient {
         }
     }
 
-    @Override
     public void sequenceMigration() {
         String repository = CarbonUtils.getCarbonRepository();
         String TenantRepo = CarbonUtils.getCarbonTenantsDirPath();
@@ -291,12 +324,8 @@ public class MigrateFrom18to19 implements MigrationClient {
         }
     }
 
-    @Override public void migrate() {
-        sequenceMigration();
-        synapseAPIMigration();
-    }
 
-    @Override public void synapseAPIMigration() {
+    public void synapseAPIMigration() {
         String repository = CarbonUtils.getCarbonRepository();
         String tenantRepository = CarbonUtils.getCarbonTenantsDirPath();
         for (Tenant tenant : tenantsArray) {

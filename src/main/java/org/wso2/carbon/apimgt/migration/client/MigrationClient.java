@@ -37,21 +37,19 @@ public interface MigrationClient {
     public void databaseMigration(String migrateVersion) throws SQLException, APIManagementException, IOException;
 
     /**
-     * This method is used to migrate swagger resources
+     * This method is used to migrate all the registry resources
+     * Swagger, RXTs and all other registry resources will be migrated
      *
      * @throws UserStoreException
-     * @throws InterruptedException
      */
-    public void swaggerResourceMigration() throws UserStoreException, InterruptedException;
+    public void registryResourceMigration() throws UserStoreException, InterruptedException;
+
 
     /**
-     * This method is used to migrate registry resources
      *
-     * @throws UserStoreException
      */
-    public void registryMigration() throws UserStoreException;
+    public void fileSystemMigration();
 
-    public void rxtMigration();
 
     /**
      * This method is used to clean old resources from registry
@@ -60,15 +58,4 @@ public interface MigrationClient {
      */
     public void cleanOldResources() throws UserStoreException;
 
-    /**
-     * This method used to add and replace the sequences in file system
-     */
-    public  void sequenceMigration();
-
-    /**
-     * This method used to execute migration
-     */
-    public void migrate();
-
-    public void synapseAPIMigration();
 }

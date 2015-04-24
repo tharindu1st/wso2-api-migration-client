@@ -95,6 +95,17 @@ public class MigrateFrom16to17 implements MigrationClient {
     }
 
     @Override
+    public void registryResourceMigration() throws UserStoreException {
+        swaggerResourceMigration();
+        registryMigration();
+        rxtMigration();
+    }
+
+    @Override
+    public void fileSystemMigration() {
+
+    }
+
     public void swaggerResourceMigration() throws UserStoreException {
         log.info("Swagger migration for API Manager 1.7.0 started");
 
@@ -184,7 +195,6 @@ public class MigrateFrom16to17 implements MigrationClient {
         }
     }
 
-    @Override
     public void registryMigration() throws UserStoreException {
         log.info("Registry migration for API Manager 1.7.0 started");
 
@@ -408,25 +418,12 @@ public class MigrateFrom16to17 implements MigrationClient {
         }
     }
 
-    @Override
     public void rxtMigration() {
 
     }
 
     @Override
     public void cleanOldResources() {
-
-    }
-
-    @Override public void sequenceMigration() {
-
-    }
-
-    @Override public void migrate() {
-
-    }
-
-    @Override public void synapseAPIMigration() {
 
     }
 

@@ -75,26 +75,23 @@ public class APIMMigrationServiceComponent {
             cleanupNeeded = Boolean.parseBoolean(System.getProperty("cleanup"));
         }
 
-
         if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
             log.info("Migrating WSO2 API Manager 1.6 swagger and documentation resources to WSO2 API Manager 1.7");
             try {
 
-                MigrateFrom16to17 migrateFrom16to17 = new MigrateFrom16to17();
+                MigrationClient migrateFrom16to17 = new MigrateFrom16to17();
 
                 //Database Migration
                 log.info("Migrating WSO2 API Manager 1.6.0 databases to WSO2 API Manager 1.7.0");
                 migrateFrom16to17.databaseMigration(migrateVersion);
 
-                //Swagger Resource Migration
-                log.info("Migrating WSO2 API Manager 1.6.0 swagger resources to WSO2 API Manager 1.7.0");
-                migrateFrom16to17.swaggerResourceMigration();
-
-                //Registry Migration
+                //Registry Resource Migration
                 log.info("Migrating WSO2 API Manager 1.6.0 registry resources to WSO2 API Manager 1.7.0");
+                migrateFrom16to17.registryResourceMigration();
 
-                //Rxt Migration
-                log.info("Migrating WSO2 API Manager 1.6.0 Rxt resources to WSO2 API Manager 1.7.0");
+                //File System Migration
+                log.info("Migrating WSO2 API Manager 1.6.0 file system resources to WSO2 API Manager 1.7.0");
+                migrateFrom16to17.fileSystemMigration();
 
                 if (log.isDebugEnabled()) {
                     log.debug("API Manager 1.6.0 to 1.7.0 migration successfully completed");
@@ -103,27 +100,32 @@ public class APIMMigrationServiceComponent {
                 log.error("User store exception occurred while migrating " + e.getMessage());
             } catch (SQLException e) {
                 log.error("SQL exception occurred while migrating " + e.getMessage());
+            } catch (InterruptedException e) {
+                log.error("Interrupted exception occurred while migrating " + e.getMessage());
+            } catch (IOException e) {
+                log.error("IOException exception occurred while migrating " + e.getMessage());
+            } catch (APIManagementException e) {
+                log.error("APIManagement exception occurred while migrating " + e.getMessage());
             }
 
         } else if (migrateVersion != null && migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
             log.info("Migrating WSO2 API Manager 1.7.0 Swagger resources to WSO2 API Manager 1.8.0");
             // Create a thread and wait till the APIManager DBUtils is initialized
             try {
-                MigrateFrom17to18 migrateFrom17to18 = new MigrateFrom17to18();
+                MigrationClient migrateFrom17to18 = new MigrateFrom17to18();
 
                 //Database Migration
                 log.info("Migrating WSO2 API Manager 1.7.0 databases to WSO2 API Manager 1.8.0");
                 migrateFrom17to18.databaseMigration(migrateVersion);
 
                 //Swagger Resource Migration
-                log.info("Migrating WSO2 API Manager 1.7.0 swagger resources to WSO2 API Manager 1.8.0");
-                migrateFrom17to18.swaggerResourceMigration();
-
-                //Registry Migration
                 log.info("Migrating WSO2 API Manager 1.7.0 registry resources to WSO2 API Manager 1.8.0");
+                migrateFrom17to18.registryResourceMigration();
 
-                //Rxt Migration
-                log.info("Migrating WSO2 API Manager 1.7.0 Rxt resources to WSO2 API Manager 1.8.0");
+                //File System Migration
+                log.info("Migrating WSO2 API Manager 1.7.0 file system resources to WSO2 API Manager 1.7.0");
+                migrateFrom17to18.fileSystemMigration();
+
 
                 if (log.isDebugEnabled()) {
                     log.debug("API Manager 1.7.0 to 1.8.0 migration successfully completed");
@@ -145,23 +147,20 @@ public class APIMMigrationServiceComponent {
             log.info("Migrating WSO2 API Manager 1.8.0 Swagger resources to WSO2 API Manager 1.9.0");
             // Create a thread and wait till the APIManager DBUtils is initialized
             try {
-                MigrateFrom18to19 migrateFrom18to19 = new MigrateFrom18to19();
+                MigrationClient migrateFrom18to19 = new MigrateFrom18to19();
 
                 //Database Migration
                 log.info("Migrating WSO2 API Manager 1.8.0 databases to WSO2 API Manager 1.9.0");
                 migrateFrom18to19.databaseMigration(migrateVersion);
 
                 //Swagger Resource Migration
-                log.info("Migrating WSO2 API Manager 1.8.0 swagger resources to WSO2 API Manager 1.9.0");
-                migrateFrom18to19.swaggerResourceMigration();
-
-                //Registry Migration
                 log.info("Migrating WSO2 API Manager 1.8.0 registry resources to WSO2 API Manager 1.9.0");
-                migrateFrom18to19.registryMigration();
+                migrateFrom18to19.registryResourceMigration();
 
-                //Rxt Migration
-                log.info("Migrating WSO2 API Manager 1.8.0 Rxt resources to WSO2 API Manager 1.9.0");
-                migrateFrom18to19.rxtMigration();
+                //File System Migration
+                log.info("Migrating WSO2 API Manager 1.7.0 file system resources to WSO2 API Manager 1.7.0");
+                migrateFrom18to19.fileSystemMigration();
+
 
                 //Old resource cleanup
                 if(cleanupNeeded) {
@@ -175,9 +174,13 @@ public class APIMMigrationServiceComponent {
             } catch (UserStoreException e) {
                 log.error("User store exception occurred while migrating " + e.getMessage());
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error("Interrupted exception occurred while migrating " + e.getMessage());
             } catch (SQLException e) {
-                e.printStackTrace();
+                log.error("SQL exception occurred while migrating database" + e.getMessage());
+            } catch (IOException e) {
+                log.error("IOException exception occurred while migrating " + e.getMessage());
+            } catch (APIManagementException e) {
+                log.error("APIManagement exception occurred while migrating " + e.getMessage());
             }
         }
         log.info("WSO2 API Manager migration component successfully activated.");
