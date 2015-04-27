@@ -21,6 +21,9 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.doc.model.Operation;
 import org.wso2.carbon.apimgt.api.doc.model.Parameter;
@@ -29,6 +32,7 @@ import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.api.model.Documentation;
 import org.wso2.carbon.apimgt.api.model.URITemplate;
 import org.wso2.carbon.apimgt.impl.APIConstants;
+import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.migration.client.internal.ServiceHolder;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
@@ -46,7 +50,26 @@ import org.wso2.carbon.registry.core.session.UserRegistry;
 import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.tenant.TenantManager;
+import org.wso2.carbon.utils.CarbonUtils;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,21 +84,12 @@ public class MigrateFrom16to17 implements MigrationClient {
     private static final Log log = LogFactory.getLog(MigrateFrom16to17.class);
 
 
-        /*String databaseDriverName = ResourceUtil.getDatabaseDriverName();
-        String queryToExecute;
-
+    @Override
+    public void databaseMigration(String migrateVersion) throws SQLException, APIManagementException, IOException {
+        log.info("Database migration for API Manager 1.8.0 started");
+        String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion);
         Connection connection = APIMgtDBUtil.getConnection();
         connection.setAutoCommit(false);
-
-        if (databaseDriverName.equalsIgnoreCase("mysql")) {
-            queryToExecute = Constants.MYSQL_QUERY_16_TO_17;
-        } else if (databaseDriverName.equalsIgnoreCase("mssql")) {
-            queryToExecute = Constants.MSSQL_QUERY_16_TO_17;
-        } else if (databaseDriverName.equalsIgnoreCase("h2")) {
-            queryToExecute = Constants.H2_QUERY_16_TO_17;
-        }else {
-            queryToExecute = Constants.ORACLE_QUERY_16_TO_17;
-        }
 
         PreparedStatement preparedStatement = connection.prepareStatement(queryToExecute);
         boolean isUpdated = preparedStatement.execute();
@@ -87,15 +101,11 @@ public class MigrateFrom16to17 implements MigrationClient {
         preparedStatement.close();
 
         if (log.isDebugEnabled()) {
-            log.debug("Query " + queryToExecute + " executed on " + databaseDriverName);
+            log.debug("Query " + queryToExecute + " executed ");
         }
 
         connection.close();
-        log.info("DB resource migration done for all the tenants");*/
-
-
-    @Override
-    public void databaseMigration(String migrateVersion) throws SQLException {
+        log.info("DB resource migration done for all the tenants");
 
     }
 
@@ -103,11 +113,119 @@ public class MigrateFrom16to17 implements MigrationClient {
     public void registryResourceMigration() throws UserStoreException {
         swaggerResourceMigration();
         registryMigration();
-        rxtMigration();
     }
 
     @Override
-    public void fileSystemMigration() {
+    public void fileSystemMigration() throws ParserConfigurationException, TransformerException, SAXException, XPathExpressionException, IOException {
+        synapseConfigMigration();
+    }
+
+    @Override
+    public void cleanOldResources() {
+
+    }
+
+    public void synapseConfigMigration() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException, TransformerException {
+        String apiHome = CarbonUtils.getCarbonHome();
+        log.info("Modifying carbon.super APIs");
+
+
+        //carbon.super API modification
+        String configPath = apiHome + File.separator + "repository" + File.separator + "deployment" + File.separator + "server" + File.separator + "synapse-configs" + File.separator + "default" + File.separator + "api";
+        modifySynapseConfigs(configPath);
+
+        //tenant API modification
+        String tenantLocation = apiHome + File.separator + "repository" + File.separator + "tenants";
+        File tenantsDir = new File(tenantLocation);
+        if (tenantsDir.exists()) {
+            File[] tenants = tenantsDir.listFiles();
+            for (File file : tenants) {
+                String configLocation = file.getAbsolutePath() + File.separator + "synapse-configs" + File.separator + "default" + File.separator + "api";
+                modifySynapseConfigs(configLocation);
+            }
+        }
+
+    }
+
+    /**
+     * modify the APIs in the synapse-config folder
+     *
+     * @param configPath path to synapse-config api folder
+     */
+    private static void modifySynapseConfigs(String configPath) throws ParserConfigurationException, TransformerException, SAXException, XPathExpressionException, IOException {
+        File[] apiArray;
+        File configFolder = new File(configPath);
+        if (configFolder.isDirectory()) {
+            apiArray = configFolder.listFiles();
+            for (File api : apiArray) {
+                if (api.getName().contains("_v")) {
+                    modifyGoogleAnalyticsTrackingHandler(api);
+                }
+            }
+        } else {
+            System.err.println("API Manager home is not set properly. Please check the build.xml file");
+        }
+    }
+
+    /**
+     * method to add property element to the existing google analytics tracking
+     * handler
+     *
+     * @throws javax.xml.parsers.ParserConfigurationException
+     * @throws IOException
+     * @throws org.xml.sax.SAXException
+     * @throws javax.xml.xpath.XPathExpressionException
+     * @throws javax.xml.transform.TransformerException
+     */
+    private static void modifyGoogleAnalyticsTrackingHandler(File api)
+            throws ParserConfigurationException, SAXException, IOException,
+            XPathExpressionException, TransformerException {
+
+        FileInputStream file = new FileInputStream(api);
+        DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = builderFactory.newDocumentBuilder();
+        Document xmlDocument = builder.parse(file);
+
+        // current handler element
+        String expression = "//handler[@class='org.wso2.carbon.apimgt.usage.publisher.APIMgtGoogleAnalyticsTrackingHandler']";
+        XPath xPath = XPathFactory.newInstance().newXPath();
+        NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(xmlDocument, XPathConstants.NODESET);
+        Element oldHandlerElem = (Element) nodeList.item(0);
+
+		/*
+		 * Replace
+		 * <handler class="org.wso2.carbon.apimgt.usage.publisher.APIMgtGoogleAnalyticsTrackingHandler"/>
+		 * with
+		 * <handler class="org.wso2.carbon.apimgt.usage.publisher.APIMgtGoogleAnalyticsTrackingHandler" >
+		 *   <property name="configKey" value="gov:/apimgt/statistics/ga-config.xml"/>
+		 * </handler>
+		 */
+
+        if (oldHandlerElem != null) {
+            // new handler to replace the old one
+            Element newHandlerElem = xmlDocument.createElement("handler");
+            newHandlerElem.setAttribute("class", "org.wso2.carbon.apimgt.usage.publisher.APIMgtGoogleAnalyticsTrackingHandler");
+            // child element for the handler
+            Element propertyElem = xmlDocument.createElement("property");
+            propertyElem.setAttribute("name", "configKey");
+            propertyElem.setAttribute("value", "gov:/apimgt/statistics/ga-config.xml");
+
+            newHandlerElem.appendChild(propertyElem);
+
+            Element root = xmlDocument.getDocumentElement();
+            NodeList handlersNodeList = root.getElementsByTagName("handlers");
+            Element handlers = (Element) handlersNodeList.item(0);
+            // replace old handler with the new one
+            handlers.replaceChild(newHandlerElem, oldHandlerElem);
+
+            // write the content into xml file
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(xmlDocument);
+            StreamResult result = new StreamResult(api);
+            transformer.transform(source, result);
+            System.out.println("Updated api: " + api.getName());
+        }
 
     }
 
@@ -236,7 +354,7 @@ public class MigrateFrom16to17 implements MigrationClient {
 
                 for (GenericArtifact artifact : artifacts) {
                     try {
-                        API api = getAPI(artifact, registry);
+                        API api = APIUtil.getAPI(artifact, registry);
                         APIIdentifier adiIdentifier = api.getId();
                         String apiResourcePath = APIUtil.getAPIPath(adiIdentifier);
                         Association[] docAssociations = registry.getAssociations(apiResourcePath, "document");
@@ -423,14 +541,6 @@ public class MigrateFrom16to17 implements MigrationClient {
         }
     }
 
-    public void rxtMigration() {
-
-    }
-
-    @Override
-    public void cleanOldResources() {
-
-    }
 
     /**
      * This method returns API object
@@ -439,7 +549,7 @@ public class MigrateFrom16to17 implements MigrationClient {
      * @param registry User Registry
      * @return api object according to the given api artifact
      * @throws APIManagementException
-     */
+     *//*
     public static API getAPI(GovernanceArtifact artifact, Registry registry)
             throws APIManagementException {
 
@@ -462,7 +572,7 @@ public class MigrateFrom16to17 implements MigrationClient {
             throw new APIManagementException(msg, e);
         }
         return api;
-    }
+    }*/
 
 
     /**
