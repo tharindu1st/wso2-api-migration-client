@@ -569,7 +569,6 @@ public class ResourceUtil {
         String resourcePath;
 
         if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
-
             //pick from 18to19Migration/sql-scripts
             resourcePath = "/18to19Migration/sql-scripts/";
 
@@ -585,7 +584,6 @@ public class ResourceUtil {
 
         if (!resourcePath.equals("")) {
             InputStream inputStream;
-            //String bamProfile = IOUtils.toString(inputStream);
             try {
                 if (databaseType.equalsIgnoreCase("MYSQL")) {
                     inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "mysql.sql");

@@ -18,6 +18,11 @@ package org.wso2.carbon.apimgt.migration.client;
 
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.user.api.UserStoreException;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -47,7 +52,7 @@ public interface MigrationClient {
     /**
      *
      */
-    public void fileSystemMigration();
+    public void fileSystemMigration() throws ParserConfigurationException, TransformerException, SAXException, XPathExpressionException, IOException;
 
 
     /**
