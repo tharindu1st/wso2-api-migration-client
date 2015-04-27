@@ -105,44 +105,77 @@ public class APIMMigrationServiceComponent {
         try {
             if (migrateVersion != null) {
                 if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
-                    log.info("Migrating WSO2 API Manager 1.6 swagger and documentation resources to WSO2 API Manager 1.7");
+                    log.info("Migrating WSO2 API Manager 1.6.0 resources to WSO2 API Manager 1.7.0");
 
                     MigrationClient migrateFrom16to17 = new MigrateFrom16to17();
 
-                    //Database Migration
-                    log.info("Migrating WSO2 API Manager 1.6.0 databases to WSO2 API Manager 1.7.0");
-                    migrateFrom16to17.databaseMigration(migrateVersion);
+                    //Default operation will migrate all three types of resources
+                    if (argsMap.get("isDBMigrationNeeded") == null && argsMap.get("isRegMigrationNeeded") == null && argsMap.get("isFileSysMigrationNeeded") == null) {
+                        log.info("Migrating WSO2 API Manager 1.6.0 resources to WSO2 API Manager 1.7.0");
+                        migrateFrom16to17.databaseMigration(migrateVersion);
+                        migrateFrom16to17.registryResourceMigration();
+                        migrateFrom16to17.fileSystemMigration();
+                    } else {
+                        //Only performs database migration
+                        if (isDBMigrationNeeded) {
+                            log.info("Migrating WSO2 API Manager 1.6.0 databases to WSO2 API Manager 1.7.0");
+                            migrateFrom16to17.databaseMigration(migrateVersion);
+                        }
+                        //Only performs registry migration
+                        if (isRegistryMigrationNeeded) {
+                            log.info("Migrating WSO2 API Manager 1.6.0 registry resources to WSO2 API Manager 1.7.0");
+                            migrateFrom16to17.registryResourceMigration();
+                        }
+                        //Only performs file system migration
+                        if (isFileSystemMigrationNeeded) {
+                            log.info("Migrating WSO2 API Manager 1.6.0 file system resources to WSO2 API Manager 1.7.0");
+                            migrateFrom16to17.fileSystemMigration();
+                        }
+                    }
 
-                    //Registry Resource Migration
-                    log.info("Migrating WSO2 API Manager 1.6.0 registry resources to WSO2 API Manager 1.7.0");
-                    migrateFrom16to17.registryResourceMigration();
-
-                    //File System Migration
-                    log.info("Migrating WSO2 API Manager 1.6.0 file system resources to WSO2 API Manager 1.7.0");
-                    migrateFrom16to17.fileSystemMigration();
+                    //Old resource cleanup
+                    if (cleanupNeeded) {
+                        migrateFrom16to17.cleanOldResources();
+                        log.info("Old resources cleaned up.");
+                    }
 
                     if (log.isDebugEnabled()) {
                         log.debug("API Manager 1.6.0 to 1.7.0 migration successfully completed");
                     }
                 } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
-                    log.info("Migrating WSO2 API Manager 1.7.0 Swagger resources to WSO2 API Manager 1.8.0");
+                    log.info("Migrating WSO2 API Manager 1.7.0 resources to WSO2 API Manager 1.8.0");
 
                     // Create a thread and wait till the APIManager DBUtils is initialized
                     MigrationClient migrateFrom17to18 = new MigrateFrom17to18();
 
-                    //Database Migration
-                    log.info("Migrating WSO2 API Manager 1.7.0 databases to WSO2 API Manager 1.8.0");
-                    migrateFrom17to18.databaseMigration(migrateVersion);
-
-                    //Swagger Resource Migration
-                    log.info("Migrating WSO2 API Manager 1.7.0 registry resources to WSO2 API Manager 1.8.0");
-                    migrateFrom17to18.registryResourceMigration();
-
-                    //File System Migration
-                    log.info("Migrating WSO2 API Manager 1.7.0 file system resources to WSO2 API Manager 1.7.0");
-                    migrateFrom17to18.fileSystemMigration();
-
-
+                    //Default operation will migrate all three types of resources
+                    if (argsMap.get("isDBMigrationNeeded") == null && argsMap.get("isRegMigrationNeeded") == null && argsMap.get("isFileSysMigrationNeeded") == null) {
+                        log.info("Migrating WSO2 API Manager 1.7.0 resources to WSO2 API Manager 1.8.0");
+                        migrateFrom17to18.databaseMigration(migrateVersion);
+                        migrateFrom17to18.registryResourceMigration();
+                        migrateFrom17to18.fileSystemMigration();
+                    } else {
+                        //Only performs database migration
+                        if (isDBMigrationNeeded) {
+                            log.info("Migrating WSO2 API Manager 1.7.0 databases to WSO2 API Manager 1.8.0");
+                            migrateFrom17to18.databaseMigration(migrateVersion);
+                        }
+                        //Only performs registry migration
+                        if (isRegistryMigrationNeeded) {
+                            log.info("Migrating WSO2 API Manager 1.7.0 registry resources to WSO2 API Manager 1.8.0");
+                            migrateFrom17to18.registryResourceMigration();
+                        }
+                        //Only performs file system migration
+                        if (isFileSystemMigrationNeeded) {
+                            log.info("Migrating WSO2 API Manager 1.7.0 file system resources to WSO2 API Manager 1.8.0");
+                            migrateFrom17to18.fileSystemMigration();
+                        }
+                    }
+                    //Old resource cleanup
+                    if (cleanupNeeded) {
+                        migrateFrom17to18.cleanOldResources();
+                        log.info("Old resources cleaned up.");
+                    }
                     if (log.isDebugEnabled()) {
                         log.debug("API Manager 1.7.0 to 1.8.0 migration successfully completed");
                     }
@@ -152,18 +185,29 @@ public class APIMMigrationServiceComponent {
 
                     MigrationClient migrateFrom18to19 = new MigrateFrom18to19();
 
-                    //Database Migration
-                    log.info("Migrating WSO2 API Manager 1.8.0 databases to WSO2 API Manager 1.9.0");
-                    migrateFrom18to19.databaseMigration(migrateVersion);
-
-                    //Swagger Resource Migration
-                    log.info("Migrating WSO2 API Manager 1.8.0 registry resources to WSO2 API Manager 1.9.0");
-                    migrateFrom18to19.registryResourceMigration();
-
-                    //File System Migration
-                    log.info("Migrating WSO2 API Manager 1.7.0 file system resources to WSO2 API Manager 1.7.0");
-                    migrateFrom18to19.fileSystemMigration();
-
+                    //Default operation will migrate all three types of resources
+                    if (argsMap.get("isDBMigrationNeeded") == null && argsMap.get("isRegMigrationNeeded") == null && argsMap.get("isFileSysMigrationNeeded") == null) {
+                        log.info("Migrating WSO2 API Manager 1.8.0 resources to WSO2 API Manager 1.9.0");
+                        migrateFrom18to19.databaseMigration(migrateVersion);
+                        migrateFrom18to19.registryResourceMigration();
+                        migrateFrom18to19.fileSystemMigration();
+                    } else {
+                        //Only performs database migration
+                        if (isDBMigrationNeeded) {
+                            log.info("Migrating WSO2 API Manager 1.8.0 databases to WSO2 API Manager 1.9.0");
+                            migrateFrom18to19.databaseMigration(migrateVersion);
+                        }
+                        //Only performs registry migration
+                        if (isRegistryMigrationNeeded) {
+                            log.info("Migrating WSO2 API Manager 1.8.0 registry resources to WSO2 API Manager 1.9.0");
+                            migrateFrom18to19.registryResourceMigration();
+                        }
+                        //Only performs file system migration
+                        if (isFileSystemMigrationNeeded) {
+                            log.info("Migrating WSO2 API Manager 1.7.0 file system resources to WSO2 API Manager 1.7.0");
+                            migrateFrom18to19.fileSystemMigration();
+                        }
+                    }
                     //Old resource cleanup
                     if (cleanupNeeded) {
                         migrateFrom18to19.cleanOldResources();
@@ -173,6 +217,8 @@ public class APIMMigrationServiceComponent {
                     if (log.isDebugEnabled()) {
                         log.debug("API Manager 1.8.0 to 1.9.0 migration successfully completed");
                     }
+                } else {
+                    log.warn("The migrate version " + migrateVersion + "is not supported. Please check the version and try again.");
                 }
             }
         } catch (UserStoreException e) {
