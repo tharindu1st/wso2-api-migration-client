@@ -79,7 +79,6 @@ public class MigrateFrom17to18 implements MigrationClient {
     @Override
     public void registryResourceMigration() throws UserStoreException, InterruptedException {
         swaggerResourceMigration();
-        registryMigration();
         rxtMigration();
     }
 
@@ -87,6 +86,11 @@ public class MigrateFrom17to18 implements MigrationClient {
     public void fileSystemMigration() {
         synapseAPIMigration();
         sequenceMigration();
+    }
+
+    @Override
+    public void cleanOldResources() {
+
     }
 
 
@@ -190,18 +194,12 @@ public class MigrateFrom17to18 implements MigrationClient {
 
     }
 
-    public void registryMigration() {
-
-    }
 
     public void rxtMigration() {
 
     }
 
-    @Override
-    public void cleanOldResources() {
 
-    }
 
     public void sequenceMigration() {
 
@@ -211,46 +209,4 @@ public class MigrateFrom17to18 implements MigrationClient {
     public void synapseAPIMigration() {
 
     }
-
-    /**
-     * This method returns API object
-     *
-     * @param artifact API Artifact
-     * @param registry User Registry
-     * @return api object according to the given api artifact
-     * @throws APIManagementException
-     */
-    /*public static API getAPI(GovernanceArtifact artifact, Registry registry)
-            throws APIManagementException {
-
-        API api;
-        try {
-            String providerName = artifact.getAttribute(APIConstants.API_OVERVIEW_PROVIDER);
-            String apiName = artifact.getAttribute(APIConstants.API_OVERVIEW_NAME);
-            String apiVersion = artifact.getAttribute(APIConstants.API_OVERVIEW_VERSION);
-            APIIdentifier apiId = new APIIdentifier(providerName, apiName, apiVersion);
-            api = new API(apiId);
-
-            api.setUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_URL));
-            api.setSandboxUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_SANDBOX_URL));
-            api.setVisibility(artifact.getAttribute(APIConstants.API_OVERVIEW_VISIBILITY));
-            api.setVisibleRoles(artifact.getAttribute(APIConstants.API_OVERVIEW_VISIBLE_ROLES));
-            api.setContext(artifact.getAttribute(APIConstants.API_OVERVIEW_CONTEXT));
-            api.setDescription(artifact.getAttribute(APIConstants.API_OVERVIEW_DESCRIPTION));
-
-            ArrayList<URITemplate> urlPatternsList = ApiMgtDAO.getAllURITemplates(api.getContext(), api.getId().getVersion());
-            Set<URITemplate> uriTemplates = new HashSet<URITemplate>(urlPatternsList);
-            for (URITemplate uriTemplate : uriTemplates) {
-                uriTemplate.setResourceURI(api.getUrl());
-                uriTemplate.setResourceSandboxURI(api.getSandboxUrl());
-            }
-            api.setUriTemplates(uriTemplates);
-
-
-        } catch (GovernanceException e) {
-            String msg = "Failed to get API from artifact. ";
-            throw new APIManagementException(msg, e);
-        }
-        return api;
-    }*/
 }

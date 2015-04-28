@@ -17,6 +17,7 @@
 package org.wso2.carbon.apimgt.migration.client;
 
 import org.wso2.carbon.apimgt.api.APIManagementException;
+import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.xml.sax.SAXException;
 
@@ -46,7 +47,7 @@ public interface MigrationClient {
      *
      * @throws UserStoreException
      */
-    public void registryResourceMigration() throws UserStoreException, InterruptedException;
+    public void registryResourceMigration() throws UserStoreException, InterruptedException, RegistryException, APIManagementException;
 
 
     /**

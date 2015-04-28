@@ -27,6 +27,7 @@ import org.wso2.carbon.apimgt.migration.client.MigrateFrom17to18;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom18to19;
 import org.wso2.carbon.apimgt.migration.client.MigrationClient;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
+import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.registry.core.service.TenantRegistryLoader;
 import org.wso2.carbon.user.api.UserStoreException;
@@ -184,7 +185,7 @@ public class APIMMigrationServiceComponent {
                         log.debug("API Manager 1.7.0 to 1.8.0 migration successfully completed");
                     }
                 } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
-                    log.info("Migrating WSO2 API Manager 1.8.0 Swagger resources to WSO2 API Manager 1.9.0");
+                    log.info("Migrating WSO2 API Manager 1.8.0 resources to WSO2 API Manager 1.9.0");
                     // Create a thread and wait till the APIManager DBUtils is initialized
 
                     MigrationClient migrateFrom18to19 = new MigrateFrom18to19();
@@ -243,6 +244,8 @@ public class APIMMigrationServiceComponent {
             log.error("XPath Expression exception occurred while migrating " + e.getMessage());
         } catch (ParserConfigurationException e) {
             log.error("Parser Configuration exception occurred while migrating " + e.getMessage());
+        } catch (RegistryException e) {
+            log.error("Registry Configuration exception occurred while migrating " + e.getMessage());
         }
         log.info("WSO2 API Manager migration component successfully activated.");
     }
