@@ -98,7 +98,7 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
     @Override
-    public void registryResourceMigration() throws UserStoreException, InterruptedException {
+    public void registryResourceMigration() throws UserStoreException, InterruptedException, RegistryException, APIManagementException {
         swaggerResourceMigration();
         rxtMigration();
     }
@@ -211,8 +211,44 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
 
-    public void rxtMigration() {
+    public void rxtMigration() throws UserStoreException, RegistryException, APIManagementException {
+        TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
+        Tenant[] tenantsArray = tenantManager.getAllTenants();
 
+
+        if (log.isDebugEnabled()) {
+            log.debug("Tenant array loaded successfully");
+        }
+
+        // Add  super tenant to the tenant array
+        Tenant[] allTenantsArray = Arrays.copyOf(tenantsArray, tenantsArray.length + 1);
+        org.wso2.carbon.user.core.tenant.Tenant superTenant = new org.wso2.carbon.user.core.tenant.Tenant();
+        superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
+        superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
+        allTenantsArray[allTenantsArray.length - 1] = superTenant;
+        if (log.isDebugEnabled()) {
+            log.debug("Super tenant added to the tenant array");
+        }
+
+        for (Tenant tenant : allTenantsArray) {
+            String adminName = ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId()).getRealmConfiguration().getAdminUserName();
+            ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
+            Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant.getId());
+            GenericArtifactManager artifactManager = APIUtil.getArtifactManager(registry,APIConstants.API_KEY);
+            GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
+            GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
+            GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
+            for (GenericArtifact artifact : artifacts) {
+                API api = APIUtil.getAPI(artifact, registry);
+                artifact.addAttribute("overview_contextTemplate", api.getContext() + "/{version}");
+                artifact.addAttribute("overview_environments","");
+                artifact.addAttribute("overview_versionType","");
+
+                artifactManager.updateGenericArtifact(artifact);
+            }
+
+
+        }
     }
 
     @Override

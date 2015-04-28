@@ -27,6 +27,7 @@ import org.wso2.carbon.apimgt.migration.client.MigrateFrom17to18;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom18to19;
 import org.wso2.carbon.apimgt.migration.client.MigrationClient;
 import org.wso2.carbon.apimgt.migration.client.util.Constants;
+import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.registry.core.service.TenantRegistryLoader;
 import org.wso2.carbon.user.api.UserStoreException;
@@ -243,6 +244,8 @@ public class APIMMigrationServiceComponent {
             log.error("XPath Expression exception occurred while migrating " + e.getMessage());
         } catch (ParserConfigurationException e) {
             log.error("Parser Configuration exception occurred while migrating " + e.getMessage());
+        } catch (RegistryException e) {
+            log.error("Registry Configuration exception occurred while migrating " + e.getMessage());
         }
         log.info("WSO2 API Manager migration component successfully activated.");
     }
