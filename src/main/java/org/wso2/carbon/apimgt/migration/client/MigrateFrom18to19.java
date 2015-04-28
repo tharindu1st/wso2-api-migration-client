@@ -100,7 +100,6 @@ public class MigrateFrom18to19 implements MigrationClient {
     @Override
     public void registryResourceMigration() throws UserStoreException, InterruptedException {
         swaggerResourceMigration();
-        registryMigration();
         rxtMigration();
     }
 
@@ -209,11 +208,6 @@ public class MigrateFrom18to19 implements MigrationClient {
             }
         }
         log.debug("Swagger resource migration done for all the tenants");
-    }
-
-
-    public void registryMigration() {
-        log.info("No registry changes found for API Manager 1.9.0 migration.");
     }
 
 

@@ -163,7 +163,7 @@ public class MigrateFrom16to17 implements MigrationClient {
                 }
             }
         } else {
-            System.err.println("API Manager home is not set properly. Please check the build.xml file");
+            log.error("API Manager home is not set properly. Please check the build.xml file");
         }
     }
 
@@ -224,7 +224,10 @@ public class MigrateFrom16to17 implements MigrationClient {
             DOMSource source = new DOMSource(xmlDocument);
             StreamResult result = new StreamResult(api);
             transformer.transform(source, result);
-            System.out.println("Updated api: " + api.getName());
+            if(log.isDebugEnabled()){
+                log.debug("Updated api: " + api.getName());
+            }
+
         }
 
     }

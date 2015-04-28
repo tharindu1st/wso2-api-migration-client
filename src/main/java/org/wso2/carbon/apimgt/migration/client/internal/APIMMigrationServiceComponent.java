@@ -184,7 +184,7 @@ public class APIMMigrationServiceComponent {
                         log.debug("API Manager 1.7.0 to 1.8.0 migration successfully completed");
                     }
                 } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
-                    log.info("Migrating WSO2 API Manager 1.8.0 Swagger resources to WSO2 API Manager 1.9.0");
+                    log.info("Migrating WSO2 API Manager 1.8.0 resources to WSO2 API Manager 1.9.0");
                     // Create a thread and wait till the APIManager DBUtils is initialized
 
                     MigrationClient migrateFrom18to19 = new MigrateFrom18to19();
