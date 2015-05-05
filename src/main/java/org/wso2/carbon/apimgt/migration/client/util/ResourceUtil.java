@@ -606,19 +606,19 @@ public class ResourceUtil {
         return queryTobeExecuted;
     }
 
-    public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath,String sequenceName){
+    public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath, String sequenceName) {
         try {
-            String filePath = sequenceDirectoryFilePath+"/"+sequenceName+".xml";
+            String filePath = sequenceDirectoryFilePath + sequenceName + ".xml";
             DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             Document doc = docBuilder.parse(filePath);
             Node sequence = doc.getFirstChild();
             Element corsHandler = doc.createElement("sequence");
             corsHandler.setAttribute("key", "_cors_request_handler");
-            if (!"_token_fault_".equals(sequenceName)||!"fault".equals(sequenceName)){
+            if (!"_token_fault_".equals(sequenceName) || !"fault".equals(sequenceName)) {
                 sequence.appendChild(corsHandler);
-            }else{
-            sequence.insertBefore(corsHandler,doc.getElementsByTagName("send").item(0));
+            } else {
+                sequence.insertBefore(corsHandler, doc.getElementsByTagName("send").item(0));
             }
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
@@ -635,6 +635,7 @@ public class ResourceUtil {
             sae.printStackTrace();
         }
     }
+
     public static void updateSynapseAPI(File filePath,String implementation){
         try {
             DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();

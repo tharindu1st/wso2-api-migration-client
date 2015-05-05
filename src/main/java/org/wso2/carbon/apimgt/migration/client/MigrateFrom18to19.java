@@ -215,7 +215,6 @@ public class MigrateFrom18to19 implements MigrationClient {
         TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
         Tenant[] tenantsArray = tenantManager.getAllTenants();
 
-
         if (log.isDebugEnabled()) {
             log.debug("Tenant array loaded successfully");
         }
@@ -246,8 +245,6 @@ public class MigrateFrom18to19 implements MigrationClient {
 
                 artifactManager.updateGenericArtifact(artifact);
             }
-
-
         }
     }
 
