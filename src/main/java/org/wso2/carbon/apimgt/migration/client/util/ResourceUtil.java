@@ -35,17 +35,23 @@ import org.wso2.carbon.registry.core.Resource;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.xml.sax.SAXException;
 
+import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.*;
+import javax.xml.stream.events.Attribute;
+import javax.xml.stream.events.StartElement;
+import javax.xml.stream.events.XMLEvent;
+import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import javax.xml.transform.stream.StreamSource;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -608,12 +614,14 @@ public class ResourceUtil {
 
     public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath, String sequenceName) {
         try {
+            String namespace = "http://ws.apache.org/ns/synapse";
             String filePath = sequenceDirectoryFilePath + sequenceName + ".xml";
             DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            docFactory.setNamespaceAware(true);
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             Document doc = docBuilder.parse(filePath);
             Node sequence = doc.getFirstChild();
-            Element corsHandler = doc.createElement("sequence");
+            Element corsHandler = doc.createElementNS(namespace, "sequence");
             corsHandler.setAttribute("key", "_cors_request_handler");
             if (!"_token_fault_".equals(sequenceName) || !"fault".equals(sequenceName)) {
                 sequence.appendChild(corsHandler);
@@ -639,6 +647,7 @@ public class ResourceUtil {
     public static void updateSynapseAPI(File filePath,String implementation){
         try {
             DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            docFactory.setNamespaceAware(true);
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             Document doc = null;
             doc = docBuilder.parse(filePath.getAbsolutePath());
