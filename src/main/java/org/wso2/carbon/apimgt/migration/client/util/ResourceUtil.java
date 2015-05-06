@@ -608,12 +608,14 @@ public class ResourceUtil {
 
     public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath, String sequenceName) {
         try {
+            String namespace = "http://ws.apache.org/ns/synapse";
             String filePath = sequenceDirectoryFilePath + sequenceName + ".xml";
             DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            docFactory.setNamespaceAware(true);
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             Document doc = docBuilder.parse(filePath);
             Node sequence = doc.getFirstChild();
-            Element corsHandler = doc.createElement("sequence");
+            Element corsHandler = doc.createElementNS(namespace, "sequence");
             corsHandler.setAttribute("key", "_cors_request_handler");
             if (!"_token_fault_".equals(sequenceName) || !"fault".equals(sequenceName)) {
                 sequence.appendChild(corsHandler);
@@ -639,6 +641,7 @@ public class ResourceUtil {
     public static void updateSynapseAPI(File filePath,String implementation){
         try {
             DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            docFactory.setNamespaceAware(true);
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             Document doc = null;
             doc = docBuilder.parse(filePath.getAbsolutePath());
