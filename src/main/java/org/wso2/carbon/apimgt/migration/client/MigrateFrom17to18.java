@@ -79,13 +79,11 @@ public class MigrateFrom17to18 implements MigrationClient {
     @Override
     public void registryResourceMigration() throws UserStoreException, InterruptedException {
         swaggerResourceMigration();
-        rxtMigration();
     }
 
     @Override
     public void fileSystemMigration() {
-        synapseAPIMigration();
-        sequenceMigration();
+
     }
 
     @Override
@@ -191,22 +189,6 @@ public class MigrateFrom17to18 implements MigrationClient {
                 PrivilegedCarbonContext.endTenantFlow();
             }
         }
-
-    }
-
-
-    public void rxtMigration() {
-
-    }
-
-
-
-    public void sequenceMigration() {
-
-    }
-
-
-    public void synapseAPIMigration() {
 
     }
 }
