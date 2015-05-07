@@ -34,8 +34,8 @@ public class Constants {
 	 */
 
     public static final String API_DOC_12_BASE_PATH = "basePath";
-    public static final String API_DOC_12_RESOURCE_PATH = "resourcePath";
-    public static final String API_DOC_12_API_VERSION = "apiVersion";
+    // --Commented out by Inspection (5/7/15, 5:47 PM):public static final String API_DOC_12_RESOURCE_PATH = "resourcePath";
+    // --Commented out by Inspection (5/7/15, 5:47 PM):public static final String API_DOC_12_API_VERSION = "apiVersion";
     public static final String API_DOC_12_APIS = "apis";
     public static final String API_DOC_12_PATH = "path";
     public static final String API_DOC_12_OPERATIONS = "operations";
@@ -75,7 +75,7 @@ public class Constants {
             + "\"paramType\": \"path\" "
             + "}";
 
-    public static final String VERSION_1_6 = "1.6";
+    // --Commented out by Inspection (5/7/15, 5:47 PM):public static final String VERSION_1_6 = "1.6";
     public static final String VERSION_1_7 = "1.7";
     public static final String VERSION_1_8 = "1.8";
     public static final String VERSION_1_9 = "1.9";

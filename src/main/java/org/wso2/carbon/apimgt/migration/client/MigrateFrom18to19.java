@@ -61,11 +61,11 @@ import java.util.*;
 public class MigrateFrom18to19 implements MigrationClient {
 
     private static final Log log = LogFactory.getLog(MigrateFrom18to19.class);
-    TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
-    List<Tenant> tenantsArray;
+    private final TenantManager TENANT_MANAGER = ServiceHolder.getRealmService().getTenantManager();
+    private List<Tenant> tenantsArray;
 
     public MigrateFrom18to19() throws UserStoreException {
-        tenantsArray = new ArrayList(Arrays.asList(tenantManager.getAllTenants()));
+        tenantsArray = new ArrayList(Arrays.asList(TENANT_MANAGER.getAllTenants()));
         Tenant superTenant = new Tenant();
         superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
         superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
@@ -109,7 +109,7 @@ public class MigrateFrom18to19 implements MigrationClient {
         sequenceMigration();
     }
 
-    public void swaggerResourceMigration() throws UserStoreException, InterruptedException {
+    void swaggerResourceMigration() throws UserStoreException {
         log.info("Swagger migration for API Manager 1.9.0 started");
 
         TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
@@ -211,7 +211,7 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
 
-    public void rxtMigration() throws UserStoreException, RegistryException, APIManagementException {
+    void rxtMigration() throws UserStoreException, RegistryException, APIManagementException {
         TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
         Tenant[] tenantsArray = tenantManager.getAllTenants();
 
@@ -318,7 +318,7 @@ public class MigrateFrom18to19 implements MigrationClient {
         }
     }
 
-    public void sequenceMigration() {
+    void sequenceMigration() {
         String repository = CarbonUtils.getCarbonRepository();
         String TenantRepo = CarbonUtils.getCarbonTenantsDirPath();
         for (Tenant tenant : tenantsArray) {
@@ -344,7 +344,7 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
 
-    public void synapseAPIMigration() {
+    void synapseAPIMigration() {
         String repository = CarbonUtils.getCarbonRepository();
         String tenantRepository = CarbonUtils.getCarbonTenantsDirPath();
         for (Tenant tenant : tenantsArray) {
