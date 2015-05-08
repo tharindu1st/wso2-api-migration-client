@@ -61,11 +61,11 @@ import java.util.*;
 public class MigrateFrom18to19 implements MigrationClient {
 
     private static final Log log = LogFactory.getLog(MigrateFrom18to19.class);
-    private final TenantManager TENANT_MANAGER = ServiceHolder.getRealmService().getTenantManager();
     private List<Tenant> tenantsArray;
 
     public MigrateFrom18to19() throws UserStoreException {
-        tenantsArray = new ArrayList(Arrays.asList(TENANT_MANAGER.getAllTenants()));
+        TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
+        tenantsArray = new ArrayList(Arrays.asList(tenantManager.getAllTenants()));
         Tenant superTenant = new Tenant();
         superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
         superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
@@ -119,23 +119,7 @@ public class MigrateFrom18to19 implements MigrationClient {
         log.info("Swagger migration for API Manager 1.9.0 started");
         try {
 
-            TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
-            Tenant[] tenantsArray = tenantManager.getAllTenants();
-            if (log.isDebugEnabled()) {
-                log.debug("Tenant array loaded successfully");
-            }
-
-            // Add  super tenant to the tenant array
-            Tenant[] allTenantsArray = Arrays.copyOf(tenantsArray, tenantsArray.length + 1);
-            org.wso2.carbon.user.core.tenant.Tenant superTenant = new org.wso2.carbon.user.core.tenant.Tenant();
-            superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
-            superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
-            allTenantsArray[allTenantsArray.length - 1] = superTenant;
-            if (log.isDebugEnabled()) {
-                log.debug("Super tenant added to the tenant array");
-            }
-
-            for (Tenant tenant : allTenantsArray) {
+            for (Tenant tenant : tenantsArray) {
                 log.info("Swagger migration for tenant " + tenant.getDomain() + "[" + tenant.getId() + "]" + " ");
 
                 PrivilegedCarbonContext.startTenantFlow();
@@ -219,27 +203,8 @@ public class MigrateFrom18to19 implements MigrationClient {
 
 
     void rxtMigration() throws APIManagementException {
-        TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
-        Tenant[] tenantsArray = new Tenant[0];
         try {
-            tenantsArray = tenantManager.getAllTenants();
-
-
-            if (log.isDebugEnabled()) {
-                log.debug("Tenant array loaded successfully");
-            }
-
-            // Add  super tenant to the tenant array
-            Tenant[] allTenantsArray = Arrays.copyOf(tenantsArray, tenantsArray.length + 1);
-            org.wso2.carbon.user.core.tenant.Tenant superTenant = new org.wso2.carbon.user.core.tenant.Tenant();
-            superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
-            superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
-            allTenantsArray[allTenantsArray.length - 1] = superTenant;
-            if (log.isDebugEnabled()) {
-                log.debug("Super tenant added to the tenant array");
-            }
-
-            for (Tenant tenant : allTenantsArray) {
+            for (Tenant tenant : tenantsArray) {
                 String adminName = ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId()).getRealmConfiguration().getAdminUserName();
                 ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
                 Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant.getId());
@@ -269,25 +234,8 @@ public class MigrateFrom18to19 implements MigrationClient {
 
     @Override
     public void cleanOldResources() throws APIManagementException {
-
         try {
-            TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
-            Tenant[] tenantsArray = tenantManager.getAllTenants();
-            if (log.isDebugEnabled()) {
-                log.debug("Tenant array loaded successfully");
-            }
-
-            // Add  super tenant to the tenant array
-            Tenant[] allTenantsArray = Arrays.copyOf(tenantsArray, tenantsArray.length + 1);
-            org.wso2.carbon.user.core.tenant.Tenant superTenant = new org.wso2.carbon.user.core.tenant.Tenant();
-            superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
-            superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
-            allTenantsArray[allTenantsArray.length - 1] = superTenant;
-            if (log.isDebugEnabled()) {
-                log.debug("Super tenant added to the tenant array");
-            }
-
-            for (Tenant tenant : allTenantsArray) {
+            for (Tenant tenant : tenantsArray) {
                 log.info("Swagger migration for tenant " + tenant.getDomain() + "[" + tenant.getId() + "]" + " ");
 
                 PrivilegedCarbonContext.startTenantFlow();
@@ -388,25 +336,18 @@ public class MigrateFrom18to19 implements MigrationClient {
                     String implementationType = api.getImplementation();
                     String qualifiedName = apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName() + ":v" +
                             apiIdentifier.getVersion();
-                    String qualifiedDefaultApiName =
-                            apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName();
-                    File synapseFile = null, defaultSynapseFile = null;
-                    for (File file : synapseFiles) {
-                        if (api.isDefaultVersion()) {
-                            if ((qualifiedDefaultApiName + ".xml").equals(file.getName())) {
-                                defaultSynapseFile = file;
+                    //String qualifiedDefaultApiName = apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName();
+                    File synapseFile = null;
+                    if (synapseFiles != null) {
+                        for (File file : synapseFiles) {
+                            if ((qualifiedName + ".xml").equals(file.getName())) {
+                                synapseFile = file;
+                                break;
                             }
                         }
-                        if ((qualifiedName + ".xml").equals(file.getName())) {
-                            synapseFile = file;
-                        }
-                        break;
                     }
                     if (synapseFile != null) {
                         ResourceUtil.updateSynapseAPI(synapseFile, implementationType);
-                    }
-                    if (defaultSynapseFile != null) {
-                        ResourceUtil.updateSynapseAPI(defaultSynapseFile, implementationType);
                     }
                 }
 
@@ -421,54 +362,6 @@ public class MigrateFrom18to19 implements MigrationClient {
             }
         }
     }
-
-
-    /**
-     * This method is used to read the api from the registry
-     *
-     * @param artifact api artifact
-     * @param registry governance registry
-     * @return API object
-     * @throws APIManagementException
-     */
-    /*public static API getAPI(GovernanceArtifact artifact, Registry registry)
-            throws APIManagementException {
-
-        API api;
-        try {
-            String providerName = artifact.getAttribute(APIConstants.API_OVERVIEW_PROVIDER);
-            String apiName = artifact.getAttribute(APIConstants.API_OVERVIEW_NAME);
-            String apiVersion = artifact.getAttribute(APIConstants.API_OVERVIEW_VERSION);
-            APIIdentifier apiId = new APIIdentifier(providerName, apiName, apiVersion);
-            api = new API(apiId);
-            if (log.isDebugEnabled()) {
-                log.debug("API read from registry successfully");
-            }
-
-            api.setUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_URL));
-            api.setSandboxUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_SANDBOX_URL));
-            api.setVisibility(artifact.getAttribute(APIConstants.API_OVERVIEW_VISIBILITY));
-            api.setVisibleRoles(artifact.getAttribute(APIConstants.API_OVERVIEW_VISIBLE_ROLES));
-            api.setContext(artifact.getAttribute(APIConstants.API_OVERVIEW_CONTEXT));
-            api.setDescription(artifact.getAttribute(APIConstants.API_OVERVIEW_DESCRIPTION));
-
-            ArrayList<URITemplate> urlPatternsList = ApiMgtDAO.getAllURITemplates(api.getContext(), api.getId().getVersion());
-            Set<URITemplate> uriTemplates = new HashSet<URITemplate>(urlPatternsList);
-            for (URITemplate uriTemplate : uriTemplates) {
-                uriTemplate.setResourceURI(api.getUrl());
-                uriTemplate.setResourceSandboxURI(api.getSandboxUrl());
-            }
-            api.setUriTemplates(uriTemplates);
-            if (log.isDebugEnabled()) {
-                log.debug("API updated with other attributes");
-            }
-
-        } catch (GovernanceException e) {
-            String errorMsg = "Failed to get API from artifact. ";
-            throw new APIManagementException(errorMsg, e);
-        }
-        return api;
-    }*/
 
     /**
      * Generates swagger v2 doc using swagger 1.2 doc
