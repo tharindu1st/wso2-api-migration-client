@@ -209,7 +209,7 @@ public class APIMMigrationServiceComponent {
                         }
                         //Only performs file system migration
                         if (isFileSystemMigrationNeeded) {
-                            log.info("Migrating WSO2 API Manager 1.7.0 file system resources to WSO2 API Manager 1.7.0");
+                            log.info("Migrating WSO2 API Manager 1.8.0 file system resources to WSO2 API Manager 1.9.0");
                             migrateFrom18to19.fileSystemMigration();
                         }
                     }
@@ -226,26 +226,10 @@ public class APIMMigrationServiceComponent {
                     log.warn("The migrate version " + migrateVersion + "is not supported. Please check the version and try again.");
                 }
             }
-        } catch (UserStoreException e) {
-            log.error("User store exception occurred while migrating " + e.getMessage());
-        } catch (SQLException e) {
-            log.error("SQL exception occurred while migrating " + e.getMessage());
-        } catch (InterruptedException e) {
-            log.error("Interrupted exception occurred while migrating " + e.getMessage());
-        } catch (IOException e) {
-            log.error("IOException exception occurred while migrating " + e.getMessage());
         } catch (APIManagementException e) {
-            log.error("APIManagement exception occurred while migrating " + e.getMessage());
-        } catch (TransformerException e) {
-            log.error("Transformer exception occurred while migrating " + e.getMessage());
-        } catch (SAXException e) {
-            log.error("SAX exception occurred while migrating " + e.getMessage());
-        } catch (XPathExpressionException e) {
-            log.error("XPath Expression exception occurred while migrating " + e.getMessage());
-        } catch (ParserConfigurationException e) {
-            log.error("Parser Configuration exception occurred while migrating " + e.getMessage());
-        } catch (RegistryException e) {
-            log.error("Registry Configuration exception occurred while migrating " + e.getMessage());
+            log.error("API Management  exception occurred while migrating " + e.getMessage());
+        } catch (UserStoreException e) {
+            log.error("User store  exception occurred while migrating " + e.getMessage());
         }
         log.info("WSO2 API Manager migration component successfully activated.");
     }
