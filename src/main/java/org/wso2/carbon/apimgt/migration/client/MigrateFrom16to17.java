@@ -85,38 +85,42 @@ public class MigrateFrom16to17 implements MigrationClient {
 
 
     @Override
-    public void databaseMigration(String migrateVersion) throws SQLException, APIManagementException, IOException {
+    public void databaseMigration(String migrateVersion) throws APIManagementException {
         log.info("Database migration for API Manager 1.8.0 started");
-        String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion);
-        Connection connection = APIMgtDBUtil.getConnection();
-        connection.setAutoCommit(false);
+        try {
+            String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion);
+            Connection connection = APIMgtDBUtil.getConnection();
+            connection.setAutoCommit(false);
 
-        PreparedStatement preparedStatement = connection.prepareStatement(queryToExecute);
-        boolean isUpdated = preparedStatement.execute();
-        if (isUpdated) {
-            connection.commit();
-        } else {
-            connection.rollback();
+            PreparedStatement preparedStatement = connection.prepareStatement(queryToExecute);
+            boolean isUpdated = preparedStatement.execute();
+            if (isUpdated) {
+                connection.commit();
+            } else {
+                connection.rollback();
+            }
+            preparedStatement.close();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Query " + queryToExecute + " executed ");
+            }
+            connection.close();
+        } catch (SQLException e) {
+            ResourceUtil.handleException(e.getMessage());
+        } catch (IOException e) {
+            ResourceUtil.handleException(e.getMessage());
         }
-        preparedStatement.close();
-
-        if (log.isDebugEnabled()) {
-            log.debug("Query " + queryToExecute + " executed ");
-        }
-
-        connection.close();
         log.info("DB resource migration done for all the tenants");
-
     }
 
     @Override
-    public void registryResourceMigration() throws UserStoreException {
+    public void registryResourceMigration() throws APIManagementException {
         swaggerResourceMigration();
         registryMigration();
     }
 
     @Override
-    public void fileSystemMigration() throws ParserConfigurationException, TransformerException, SAXException, XPathExpressionException, IOException {
+    public void fileSystemMigration() throws APIManagementException {
         synapseConfigMigration();
     }
 
@@ -125,24 +129,36 @@ public class MigrateFrom16to17 implements MigrationClient {
 
     }
 
-    public void synapseConfigMigration() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException, TransformerException {
+    public void synapseConfigMigration() throws APIManagementException {
         String apiHome = CarbonUtils.getCarbonHome();
         log.info("Modifying carbon.super APIs");
 
+        try {
 
-        //carbon.super API modification
-        String configPath = apiHome + File.separator + "repository" + File.separator + "deployment" + File.separator + "server" + File.separator + "synapse-configs" + File.separator + "default" + File.separator + "api";
-        modifySynapseConfigs(configPath);
+            //carbon.super API modification
+            String configPath = apiHome + File.separator + "repository" + File.separator + "deployment" + File.separator + "server" + File.separator + "synapse-configs" + File.separator + "default" + File.separator + "api";
+            modifySynapseConfigs(configPath);
 
-        //tenant API modification
-        String tenantLocation = apiHome + File.separator + "repository" + File.separator + "tenants";
-        File tenantsDir = new File(tenantLocation);
-        if (tenantsDir.exists()) {
-            File[] tenants = tenantsDir.listFiles();
-            for (File file : tenants) {
-                String configLocation = file.getAbsolutePath() + File.separator + "synapse-configs" + File.separator + "default" + File.separator + "api";
-                modifySynapseConfigs(configLocation);
+            //tenant API modification
+            String tenantLocation = apiHome + File.separator + "repository" + File.separator + "tenants";
+            File tenantsDir = new File(tenantLocation);
+            if (tenantsDir.exists()) {
+                File[] tenants = tenantsDir.listFiles();
+                for (File file : tenants) {
+                    String configLocation = file.getAbsolutePath() + File.separator + "synapse-configs" + File.separator + "default" + File.separator + "api";
+                    modifySynapseConfigs(configLocation);
+                }
             }
+        } catch (IOException e) {
+            ResourceUtil.handleException(e.getMessage());
+        } catch (ParserConfigurationException e) {
+            ResourceUtil.handleException(e.getMessage());
+        } catch (SAXException e) {
+            ResourceUtil.handleException(e.getMessage());
+        } catch (TransformerException e) {
+            ResourceUtil.handleException(e.getMessage());
+        } catch (XPathExpressionException e) {
+            ResourceUtil.handleException(e.getMessage());
         }
 
     }
@@ -232,28 +248,29 @@ public class MigrateFrom16to17 implements MigrationClient {
 
     }
 
-    public void swaggerResourceMigration() throws UserStoreException {
+    public void swaggerResourceMigration() throws APIManagementException {
         log.info("Swagger migration for API Manager 1.7.0 started");
 
-        TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
-        Tenant[] tenantsArray = tenantManager.getAllTenants();
-        if(log.isDebugEnabled()){
-            log.debug("Tenant array loaded successfully");
-        }
+        try {
+            TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
+            Tenant[] tenantsArray = tenantManager.getAllTenants();
+            if (log.isDebugEnabled()) {
+                log.debug("Tenant array loaded successfully");
+            }
 
-        // Add  super tenant to the tenant array
-        Tenant[] allTenantsArray = Arrays.copyOf(tenantsArray, tenantsArray.length + 1);
-        org.wso2.carbon.user.core.tenant.Tenant superTenant = new org.wso2.carbon.user.core.tenant.Tenant();
-        superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
-        superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
-        allTenantsArray[allTenantsArray.length - 1] = superTenant;
-        if (log.isDebugEnabled()) {
-            log.debug("Super tenant added to the tenant array");
-        }
+            // Add  super tenant to the tenant array
+            Tenant[] allTenantsArray = Arrays.copyOf(tenantsArray, tenantsArray.length + 1);
+            org.wso2.carbon.user.core.tenant.Tenant superTenant = new org.wso2.carbon.user.core.tenant.Tenant();
+            superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
+            superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
+            allTenantsArray[allTenantsArray.length - 1] = superTenant;
+            if (log.isDebugEnabled()) {
+                log.debug("Super tenant added to the tenant array");
+            }
 
-        for (Tenant tenant : allTenantsArray) {
-            log.info("Swagger resource migration for tenant " + tenant.getDomain() + "[" + tenant.getId() + "]");
-            try {
+            for (Tenant tenant : allTenantsArray) {
+                log.info("Swagger resource migration for tenant " + tenant.getDomain() + "[" + tenant.getId() + "]");
+
                 //Start a new tenant flow
                 PrivilegedCarbonContext.startTenantFlow();
                 PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
@@ -267,82 +284,73 @@ public class MigrateFrom16to17 implements MigrationClient {
                 GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
 
                 for (GenericArtifact artifact : artifacts) {
-                    try {
-                        API api = APIUtil.getAPI(artifact, registry);
-                        APIIdentifier apiIdentifier = api.getId();
-                        String apiName = apiIdentifier.getApiName();
-                        String apiVersion = apiIdentifier.getVersion();
-                        String apiProviderName = apiIdentifier.getProviderName();
-                        artifact.setAttribute(APIConstants.PROTOTYPE_OVERVIEW_IMPLEMENTATION, APIConstants.IMPLEMENTATION_TYPE_ENDPOINT);
-                        manager.updateGenericArtifact(artifact);
-                        String apiDefinitionFilePath = ResourceUtil.getAPIDefinitionFilePath(apiName, apiVersion, apiProviderName);
-                        Resource resource = registry.get(apiDefinitionFilePath);
-                        String text = new String((byte[]) resource.getContent());
-                        String newContentPath = APIUtil.getAPIDefinitionFilePath(apiName, apiVersion, apiProviderName);
-                        Resource docContent = registry.newResource();
-                        docContent.setContent(text);
-                        docContent.setMediaType("text/plain");
-                        registry.put(newContentPath, docContent);
-                        String visibleRolesList = api.getVisibleRoles();
-                        String[] visibleRoles = new String[0];
-                        if (visibleRolesList != null) {
-                            visibleRoles = visibleRolesList.split(",");
-                        }
-                        ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId()).getAuthorizationManager().authorizeRole(APIConstants.ANONYMOUS_ROLE,
-                                "_system/governance" + newContentPath,
-                                ActionConstants.GET);
-
-
-                        //add swagger 1.2 resources
-                        log.info("Creating swagger 1.2 docs resources for : " + apiName + "-" + apiVersion + "-" + apiProviderName);
-
-                        createSwagger12Resources(artifact, registry, api, tenant);
-
-                        //merge swagger 1.1 content with 1.2 resources
-                        log.info("Updating swagger 1.2 docs resource for : " + apiName + "-" + apiVersion + "-" + apiProviderName);
-
-                        updateSwagger12ResourcesUsingSwagger11Doc(apiIdentifier, registry);
-
-                    } catch (RegistryException e) {
-                        log.error("RegistryException while migrating api in " + tenant.getDomain(), e);
-                    } catch (APIManagementException e) {
-                        log.error("APIManagementException while migrating api in " + tenant.getDomain(), e);
-                    } catch (Exception e) {
-                        log.error(e.getMessage(), e);
+                    API api = APIUtil.getAPI(artifact, registry);
+                    APIIdentifier apiIdentifier = api.getId();
+                    String apiName = apiIdentifier.getApiName();
+                    String apiVersion = apiIdentifier.getVersion();
+                    String apiProviderName = apiIdentifier.getProviderName();
+                    artifact.setAttribute(APIConstants.PROTOTYPE_OVERVIEW_IMPLEMENTATION, APIConstants.IMPLEMENTATION_TYPE_ENDPOINT);
+                    manager.updateGenericArtifact(artifact);
+                    String apiDefinitionFilePath = ResourceUtil.getAPIDefinitionFilePath(apiName, apiVersion, apiProviderName);
+                    Resource resource = registry.get(apiDefinitionFilePath);
+                    String text = new String((byte[]) resource.getContent());
+                    String newContentPath = APIUtil.getAPIDefinitionFilePath(apiName, apiVersion, apiProviderName);
+                    Resource docContent = registry.newResource();
+                    docContent.setContent(text);
+                    docContent.setMediaType("text/plain");
+                    registry.put(newContentPath, docContent);
+                    String visibleRolesList = api.getVisibleRoles();
+                    String[] visibleRoles = new String[0];
+                    if (visibleRolesList != null) {
+                        visibleRoles = visibleRolesList.split(",");
                     }
+                    ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId()).getAuthorizationManager().authorizeRole(APIConstants.ANONYMOUS_ROLE,
+                            "_system/governance" + newContentPath,
+                            ActionConstants.GET);
+
+
+                    //add swagger 1.2 resources
+                    log.info("Creating swagger 1.2 docs resources for : " + apiName + "-" + apiVersion + "-" + apiProviderName);
+
+                    createSwagger12Resources(artifact, registry, api, tenant);
+
+                    //merge swagger 1.1 content with 1.2 resources
+                    log.info("Updating swagger 1.2 docs resource for : " + apiName + "-" + apiVersion + "-" + apiProviderName);
+
+                    updateSwagger12ResourcesUsingSwagger11Doc(apiIdentifier, registry);
                 }
-            } catch (RegistryException e) {
-                log.error("RegistryException while getting artifacts for  " + tenant.getDomain(), e);
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
-            } finally {
-                PrivilegedCarbonContext.endTenantFlow();
             }
+        } catch (RegistryException e) {
+            ResourceUtil.handleException(e.getMessage());
+        } catch (UserStoreException e) {
+            ResourceUtil.handleException(e.getMessage());
+        } finally {
+            PrivilegedCarbonContext.endTenantFlow();
         }
     }
 
-    public void registryMigration() throws UserStoreException {
+    public void registryMigration() throws APIManagementException {
         log.info("Registry migration for API Manager 1.7.0 started");
+        try {
+            TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
+            Tenant[] tenantsArray = tenantManager.getAllTenants();
+            if (log.isDebugEnabled()) {
+                log.debug("Tenant array loaded successfully");
+            }
 
-        TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
-        Tenant[] tenantsArray = tenantManager.getAllTenants();
-        if(log.isDebugEnabled()){
-            log.debug("Tenant array loaded successfully");
-        }
+            // Add  super tenant to the tenant array
+            Tenant[] allTenantsArray = Arrays.copyOf(tenantsArray, tenantsArray.length + 1);
+            org.wso2.carbon.user.core.tenant.Tenant superTenant = new org.wso2.carbon.user.core.tenant.Tenant();
+            superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
+            superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
+            allTenantsArray[allTenantsArray.length - 1] = superTenant;
+            if (log.isDebugEnabled()) {
+                log.debug("Super tenant added to the tenant array");
+            }
 
-        // Add  super tenant to the tenant array
-        Tenant[] allTenantsArray = Arrays.copyOf(tenantsArray, tenantsArray.length + 1);
-        org.wso2.carbon.user.core.tenant.Tenant superTenant = new org.wso2.carbon.user.core.tenant.Tenant();
-        superTenant.setId(MultitenantConstants.SUPER_TENANT_ID);
-        superTenant.setDomain(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
-        allTenantsArray[allTenantsArray.length - 1] = superTenant;
-        if (log.isDebugEnabled()) {
-            log.debug("Super tenant added to the tenant array");
-        }
+            for (Tenant tenant : allTenantsArray) {
+                log.info("Document file migration for tenant " + tenant.getDomain() + "[" + tenant.getId() + "]");
 
-        for (Tenant tenant : allTenantsArray) {
-            log.info("Document file migration for tenant " + tenant.getDomain() + "[" + tenant.getId() + "]");
-            try {
                 //Start a new tenant flow
                 PrivilegedCarbonContext.getThreadLocalCarbonContext().startTenantFlow();
                 PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
@@ -356,191 +364,183 @@ public class MigrateFrom16to17 implements MigrationClient {
                 GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
 
                 for (GenericArtifact artifact : artifacts) {
-                    try {
-                        API api = APIUtil.getAPI(artifact, registry);
-                        APIIdentifier adiIdentifier = api.getId();
-                        String apiResourcePath = APIUtil.getAPIPath(adiIdentifier);
-                        Association[] docAssociations = registry.getAssociations(apiResourcePath, "document");
-                        for (Association association : docAssociations) {
-                            String docPath = association.getDestinationPath();
-                            Resource docResource = registry.get(docPath);
-                            GenericArtifactManager docArtifactManager = new GenericArtifactManager(registry, APIConstants.DOCUMENTATION_KEY);
-                            GenericArtifact docArtifact = docArtifactManager.getGenericArtifact(docResource.getUUID());
-                            String docFilePath = docArtifact.getAttribute(APIConstants.DOC_FILE_PATH);
-                            Documentation doc = APIUtil.getDocumentation(docArtifact);
-                            if (Documentation.DocumentSourceType.FILE.equals(doc.getSourceType())) {
-                                if (docFilePath != null && !docFilePath.equals("")) {
-                                    //The docFilePatch comes as /t/tenanatdoman/registry/resource/_system/governance/apimgt/applicationdata..
-                                    //We need to remove the /t/tenanatdoman/registry/resource/_system/governance section to set permissions.
-                                    int startIndex = docFilePath.indexOf("governance") + "governance".length();
-                                    String filePath = docFilePath.substring(startIndex, docFilePath.length());
-                                    if (!filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".")) {
+                    API api = APIUtil.getAPI(artifact, registry);
+                    APIIdentifier adiIdentifier = api.getId();
+                    String apiResourcePath = APIUtil.getAPIPath(adiIdentifier);
+                    Association[] docAssociations = registry.getAssociations(apiResourcePath, "document");
+                    for (Association association : docAssociations) {
+                        String docPath = association.getDestinationPath();
+                        Resource docResource = registry.get(docPath);
+                        GenericArtifactManager docArtifactManager = new GenericArtifactManager(registry, APIConstants.DOCUMENTATION_KEY);
+                        GenericArtifact docArtifact = docArtifactManager.getGenericArtifact(docResource.getUUID());
+                        String docFilePath = docArtifact.getAttribute(APIConstants.DOC_FILE_PATH);
+                        Documentation doc = APIUtil.getDocumentation(docArtifact);
+                        if (Documentation.DocumentSourceType.FILE.equals(doc.getSourceType())) {
+                            if (docFilePath != null && !docFilePath.equals("")) {
+                                //The docFilePatch comes as /t/tenanatdoman/registry/resource/_system/governance/apimgt/applicationdata..
+                                //We need to remove the /t/tenanatdoman/registry/resource/_system/governance section to set permissions.
+                                int startIndex = docFilePath.indexOf("governance") + "governance".length();
+                                String filePath = docFilePath.substring(startIndex, docFilePath.length());
+                                if (!filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".")) {
+                                    Resource resource = registry.get(filePath);
+                                    resource.setMediaType("text/plain");
+                                    registry.put(filePath, resource);
+                                } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".wsdl")) {
+                                    String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                    if (registry.resourceExists(resourcePath)) {
                                         Resource resource = registry.get(filePath);
-                                        resource.setMediaType("text/plain");
+                                        resource.setMediaType("application/api-wsdl");
                                         registry.put(filePath, resource);
-                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".wsdl")) {
+                                    }
+                                } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".pdf")) {
+                                    String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                    if (registry.resourceExists(resourcePath)) {
+                                        Resource resource = registry.get(filePath);
+                                        resource.setMediaType("application/pdf");
+                                        registry.put(filePath, resource);
+                                    }
+                                } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".xl")) {
+                                    String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                    if (registry.resourceExists(resourcePath)) {
+                                        Resource resource = registry.get(filePath);
+                                        resource.setMediaType("application/vnd.ms-excel");
+                                        registry.put(filePath, resource);
+                                    }
+                                } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".ppt")) {
+                                    String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                    if (registry.resourceExists(resourcePath)) {
+                                        Resource resource = registry.get(filePath);
+                                        resource.setMediaType("application/vnd.ms-powerpoint");
+                                        registry.put(filePath, resource);
+                                    }
+                                } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".xml")) {
+                                    String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                    if (registry.resourceExists(resourcePath)) {
+                                        Resource resource = registry.get(filePath);
+                                        resource.setMediaType("application/xml");
+                                        registry.put(filePath, resource);
+                                    }
+                                } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".js")) {
+                                    String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                    if (registry.resourceExists(resourcePath)) {
+                                        Resource resource = registry.get(filePath);
+                                        resource.setMediaType("application/javascript");
+                                        registry.put(filePath, resource);
+                                    }
+                                } else {
+                                    if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".css")) {
                                         String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
                                         if (registry.resourceExists(resourcePath)) {
                                             Resource resource = registry.get(filePath);
-                                            resource.setMediaType("application/api-wsdl");
+                                            resource.setMediaType("text/css");
                                             registry.put(filePath, resource);
                                         }
-                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".pdf")) {
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".csv")) {
                                         String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
                                         if (registry.resourceExists(resourcePath)) {
                                             Resource resource = registry.get(filePath);
-                                            resource.setMediaType("application/pdf");
+                                            resource.setMediaType("text/csv");
                                             registry.put(filePath, resource);
                                         }
-                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".xl")) {
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".html")) {
                                         String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
                                         if (registry.resourceExists(resourcePath)) {
                                             Resource resource = registry.get(filePath);
-                                            resource.setMediaType("application/vnd.ms-excel");
+                                            resource.setMediaType("text/html");
                                             registry.put(filePath, resource);
                                         }
-                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".ppt")) {
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".json")) {
                                         String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
                                         if (registry.resourceExists(resourcePath)) {
                                             Resource resource = registry.get(filePath);
-                                            resource.setMediaType("application/vnd.ms-powerpoint");
+                                            resource.setMediaType("application/json");
                                             registry.put(filePath, resource);
                                         }
-                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".xml")) {
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".png")) {
                                         String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
                                         if (registry.resourceExists(resourcePath)) {
                                             Resource resource = registry.get(filePath);
-                                            resource.setMediaType("application/xml");
+                                            resource.setMediaType("image/png");
                                             registry.put(filePath, resource);
                                         }
-                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".js")) {
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".ttf")) {
                                         String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
                                         if (registry.resourceExists(resourcePath)) {
                                             Resource resource = registry.get(filePath);
-                                            resource.setMediaType("application/javascript");
+                                            resource.setMediaType("application/x-font-ttf");
                                             registry.put(filePath, resource);
                                         }
-                                    } else {
-                                        if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".css")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("text/css");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".csv")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("text/csv");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".html")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("text/html");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".json")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("application/json");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".png")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("image/png");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".ttf")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("application/x-font-ttf");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".eot")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("application/vnd.ms-fontobject");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".woff")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("application/font-woff");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".otf")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("application/x-font-otf");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".zip")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("application/zip");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".xhtml")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("application/xhtml+xml");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".txt")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("text/plain");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".png")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("image/png");
-                                                registry.put(filePath, resource);
-                                            }
-                                        } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".jpeg")) {
-                                            String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
-                                            if (registry.resourceExists(resourcePath)) {
-                                                Resource resource = registry.get(filePath);
-                                                resource.setMediaType("image/jpeg");
-                                                registry.put(filePath, resource);
-                                            }
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".eot")) {
+                                        String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                        if (registry.resourceExists(resourcePath)) {
+                                            Resource resource = registry.get(filePath);
+                                            resource.setMediaType("application/vnd.ms-fontobject");
+                                            registry.put(filePath, resource);
+                                        }
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".woff")) {
+                                        String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                        if (registry.resourceExists(resourcePath)) {
+                                            Resource resource = registry.get(filePath);
+                                            resource.setMediaType("application/font-woff");
+                                            registry.put(filePath, resource);
+                                        }
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".otf")) {
+                                        String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                        if (registry.resourceExists(resourcePath)) {
+                                            Resource resource = registry.get(filePath);
+                                            resource.setMediaType("application/x-font-otf");
+                                            registry.put(filePath, resource);
+                                        }
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".zip")) {
+                                        String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                        if (registry.resourceExists(resourcePath)) {
+                                            Resource resource = registry.get(filePath);
+                                            resource.setMediaType("application/zip");
+                                            registry.put(filePath, resource);
+                                        }
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".xhtml")) {
+                                        String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                        if (registry.resourceExists(resourcePath)) {
+                                            Resource resource = registry.get(filePath);
+                                            resource.setMediaType("application/xhtml+xml");
+                                            registry.put(filePath, resource);
+                                        }
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".txt")) {
+                                        String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                        if (registry.resourceExists(resourcePath)) {
+                                            Resource resource = registry.get(filePath);
+                                            resource.setMediaType("text/plain");
+                                            registry.put(filePath, resource);
+                                        }
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".png")) {
+                                        String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                        if (registry.resourceExists(resourcePath)) {
+                                            Resource resource = registry.get(filePath);
+                                            resource.setMediaType("image/png");
+                                            registry.put(filePath, resource);
+                                        }
+                                    } else if (filePath.split(RegistryConstants.PATH_SEPARATOR + "files" + RegistryConstants.PATH_SEPARATOR)[1].contains(".jpeg")) {
+                                        String resourcePath = "_system" + RegistryConstants.PATH_SEPARATOR + "governance" + filePath;
+                                        if (registry.resourceExists(resourcePath)) {
+                                            Resource resource = registry.get(filePath);
+                                            resource.setMediaType("image/jpeg");
+                                            registry.put(filePath, resource);
                                         }
                                     }
-                                    registry.copy(filePath, filePath);
-                                    registry.addAssociation(docArtifact.getPath(), filePath, APIConstants.DOCUMENTATION_FILE_ASSOCIATION);
                                 }
+                                registry.copy(filePath, filePath);
+                                registry.addAssociation(docArtifact.getPath(), filePath, APIConstants.DOCUMENTATION_FILE_ASSOCIATION);
                             }
                         }
-                    } catch (APIManagementException e) {
-                        log.error(e.getMessage(), e);
-                    } catch (RegistryException e) {
-                        log.error(e.getMessage(), e);
-                    } catch (Exception e) {
-                        log.error(e.getMessage(), e);
                     }
                 }
-            } catch (RegistryException e) {
-                log.error(e.getMessage(), e);
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
-            } finally {
-                PrivilegedCarbonContext.getThreadLocalCarbonContext().endTenantFlow();
             }
+        } catch (UserStoreException e) {
+            ResourceUtil.handleException(e.getMessage());
+        } catch (GovernanceException e) {
+            ResourceUtil.handleException(e.getMessage());
+        } catch (RegistryException e) {
+            ResourceUtil.handleException(e.getMessage());
         }
     }
 

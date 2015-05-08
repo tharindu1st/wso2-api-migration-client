@@ -29,6 +29,7 @@ import org.w3c.dom.NodeList;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
+import org.wso2.carbon.apimgt.impl.workflow.WorkflowException;
 import org.wso2.carbon.registry.core.Registry;
 import org.wso2.carbon.registry.core.RegistryConstants;
 import org.wso2.carbon.registry.core.Resource;
@@ -604,6 +605,11 @@ public class ResourceUtil {
             }
         }
         return queryTobeExecuted;
+    }
+
+    public static void handleException(String msg) throws APIManagementException {
+        log.error(msg);
+        throw new APIManagementException(msg);
     }
 
     public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath, String sequenceName) {

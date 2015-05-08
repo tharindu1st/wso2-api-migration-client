@@ -17,6 +17,7 @@
 package org.wso2.carbon.apimgt.migration.client;
 
 import org.wso2.carbon.apimgt.api.APIManagementException;
+import org.wso2.carbon.apimgt.impl.workflow.WorkflowException;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.xml.sax.SAXException;
@@ -37,30 +38,31 @@ public interface MigrationClient {
     /**
      * This method is used to migrate database resources
      *
-     * @throws SQLException
+     * @throws APIManagementException
      */
-    public void databaseMigration(String migrateVersion) throws SQLException, APIManagementException, IOException;
+    public void databaseMigration(String migrateVersion) throws APIManagementException;
 
     /**
      * This method is used to migrate all the registry resources
      * Swagger, RXTs and all other registry resources will be migrated
      *
-     * @throws UserStoreException
+     * @throws APIManagementException
      */
-    public void registryResourceMigration() throws UserStoreException, InterruptedException, RegistryException, APIManagementException;
+    public void registryResourceMigration() throws APIManagementException;
 
 
     /**
      *
+     * @throws APIManagementException
      */
-    public void fileSystemMigration() throws ParserConfigurationException, TransformerException, SAXException, XPathExpressionException, IOException;
+    public void fileSystemMigration() throws APIManagementException;
 
 
     /**
      * This method is used to clean old resources from registry
      *
-     * @throws UserStoreException
+     * @throws APIManagementException
      */
-    public void cleanOldResources() throws UserStoreException;
+    public void cleanOldResources() throws APIManagementException;
 
 }
