@@ -109,7 +109,7 @@ public class APIMMigrationServiceComponent {
 
         try {
             if (migrateVersion != null) {
-                if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
+                /*if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
                     log.info("Migrating WSO2 API Manager 1.6.0 resources to WSO2 API Manager 1.7.0");
 
                     MigrationClient migrateFrom16to17 = new MigrateFrom16to17();
@@ -184,7 +184,8 @@ public class APIMMigrationServiceComponent {
                     if (log.isDebugEnabled()) {
                         log.debug("API Manager 1.7.0 to 1.8.0 migration successfully completed");
                     }
-                } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
+                } */
+                if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
                     log.info("Migrating WSO2 API Manager 1.8.0 resources to WSO2 API Manager 1.9.0");
                     // Create a thread and wait till the APIManager DBUtils is initialized
 
@@ -223,7 +224,7 @@ public class APIMMigrationServiceComponent {
                         log.debug("API Manager 1.8.0 to 1.9.0 migration successfully completed");
                     }
                 } else {
-                    log.warn("The migrate version " + migrateVersion + "is not supported. Please check the version and try again.");
+                    log.warn("The migrate version " + migrateVersion + " is not supported. Please check the version and try again.");
                 }
             }
         } catch (APIManagementException e) {
