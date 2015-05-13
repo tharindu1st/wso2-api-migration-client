@@ -40,7 +40,7 @@ public interface MigrationClient {
      *
      * @throws APIManagementException
      */
-    public void databaseMigration(String migrateVersion) throws APIManagementException;
+    public void databaseMigration(String migrateVersion) throws APIManagementException, SQLException;
 
     /**
      * This method is used to migrate all the registry resources
