@@ -1,42 +1,57 @@
 /*
- *  Copyright WSO2 Inc.
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+* Copyright (c) 2015, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 package org.wso2.carbon.apimgt.migration.client.util;
 
-import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.DriverPropertyInfo;
-import java.sql.SQLException;
-import java.util.*;
-
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.registry.core.Registry;
 import org.wso2.carbon.registry.core.RegistryConstants;
 import org.wso2.carbon.registry.core.Resource;
-import org.wso2.carbon.registry.core.config.DataBaseConfiguration;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
-import org.wso2.carbon.utils.CarbonUtils;
+import org.xml.sax.SAXException;
 
-import javax.sql.DataSource;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @SuppressWarnings("unchecked , unused")
 public class ResourceUtil {
@@ -49,7 +64,7 @@ public class ResourceUtil {
      *
      * @param resource api-doc which contains swagger 1.1 info
      * @return map of parameter array related to all the http methods for each resource.
-     *      the key for the map is resourcepath_httpmethod
+     * the key for the map is resourcepath_httpmethod
      */
     public static Map<String, JSONArray> getAllParametersForResources(JSONObject resource) {
         Map<String, JSONArray> parameters = new HashMap<String, JSONArray>();
@@ -84,11 +99,11 @@ public class ResourceUtil {
     /**
      * Get all the operation object related to each resource. Method is inside the operation object
      * this object contains the nickname, description related to that resource method
-     * @param resource
-     *            api-doc which contains swagger 1.1 info
+     *
+     * @param resource api-doc which contains swagger 1.1 info
      * @return map of operations array related to all the http methods for each
-     *         resource. the key for
-     *         the map is resourcepath_httpmethod
+     * resource. the key for
+     * the map is resourcepath_httpmethod
      */
     private static Map<String, JSONObject> getAllOperationsForResources(JSONObject resource) {
         Map<String, JSONObject> parameters = new HashMap<String, JSONObject>();
@@ -126,6 +141,7 @@ public class ResourceUtil {
 
         return parameters;
     }
+
     /**
      * Get all the apis as a map. key for map is the full resource path for that api. key is created
      * using 'basepath + apis[i].path' values in the api-doc.json file (swagger 1.1 doc)
@@ -171,15 +187,12 @@ public class ResourceUtil {
      * parameters to operations element, add 'nickname' variable and the
      * 'basePath' variable
      *
-     * @param resource
-     *            resource inside the 1.2 location
-     * @param allParameters
-     *            map containing all the parameters extracted from api-doc
-     *            containing
-     *            resources for swagger 1.1
-     * @param allOperations
-     * @param basePath
-     *            base path for the resource
+     * @param resource      resource inside the 1.2 location
+     * @param allParameters map containing all the parameters extracted from api-doc
+     *                      containing
+     *                      resources for swagger 1.1
+     * @param allOperations all operations
+     * @param basePath      base path for the resource
      * @return modified resource for the api
      */
     public static String getUpdatedSwagger12Resource(JSONObject resource,
@@ -208,9 +221,9 @@ public class ResourceUtil {
                     parameters = allParameters.get(key);
 
                     //setting the 'type' to 'string' if this variable is missing
-                    for(int m = 0; m < parameters.size(); m++ ){
-                        JSONObject para = (JSONObject)parameters.get(m);
-                        if(!para.containsKey("type")){
+                    for (int m = 0; m < parameters.size(); m++) {
+                        JSONObject para = (JSONObject) parameters.get(m);
+                        if (!para.containsKey("type")) {
                             para.put("type", "string");
                         }
                     }
@@ -221,11 +234,11 @@ public class ResourceUtil {
                 }
                 //if there are parameters already in this
                 JSONArray existingParams = (JSONArray) operation.get(Constants.API_DOC_12_PARAMETERS);
-                if(existingParams.isEmpty()) {
+                if (existingParams.isEmpty()) {
                     JSONParser parser = new JSONParser();
-                    if(path.contains("{")) {
+                    if (path.contains("{")) {
                         List<String> urlParams = ResourceUtil.getURLTemplateParams(path);
-                        for(String p: urlParams){
+                        for (String p : urlParams) {
                             try {
                                 JSONObject paramObj = (JSONObject) parser.parse(Constants.DEFAULT_PARAM_FOR_URL_TEMPLATE);
                                 paramObj.put("name", p);
@@ -239,19 +252,19 @@ public class ResourceUtil {
                     // add parameters array
                     operation.put(Constants.API_DOC_12_PARAMETERS, parameters);
                 } else {
-                    for(int k = 0; k < existingParams.size(); k ++ ) {
+                    for (int k = 0; k < existingParams.size(); k++) {
                         parameters.add(existingParams.get(k));
                     }
                     operation.put(Constants.API_DOC_12_PARAMETERS, parameters);
                 }
 
                 //updating the resource description and nickname using values in the swagger 1.1 doc
-                if(allOperations.containsKey(key)){
+                if (allOperations.containsKey(key)) {
 
                     //update info related to object
                     JSONObject operationObj11 = allOperations.get(key);
                     //add summery
-                    if(operationObj11.containsKey("summary")) {
+                    if (operationObj11.containsKey("summary")) {
                         operation.put("summary", operationObj11.get("summery"));
                     }
 
@@ -267,10 +280,11 @@ public class ResourceUtil {
 
     /**
      * location for the swagger 1.2 resources
-     * @param apiName
-     * @param apiVersion
-     * @param apiProvider
-     * @return
+     *
+     * @param apiName     api name
+     * @param apiVersion  api version
+     * @param apiProvider api provider
+     * @return swagger v1.2 location
      */
     public static String getSwagger12ResourceLocation(String apiName, String apiVersion,
                                                       String apiProvider) {
@@ -282,22 +296,21 @@ public class ResourceUtil {
 
     /**
      * update all the the swagger document in the registry related to an api
-     * @param apiDocJson
-     * @param docResourcePaths
-     * @param re
+     *
+     * @param apiDocJson       api doc
+     * @param docResourcePaths doc resource paths
+     * @param registry         registry
      * @throws ParseException
      * @throws RegistryException
      */
     public static void updateAPISwaggerDocs(String apiDocJson, String[] docResourcePaths,
-                                            Registry re) throws ParseException, RegistryException {
+                                            Registry registry) throws ParseException, RegistryException {
 
         JSONParser parser = new JSONParser();
         JSONObject apiDoc11 = (JSONObject) parser.parse(apiDocJson);
 
         Map<String, JSONArray> allParameters = ResourceUtil.getAllParametersForResources(apiDoc11);
-
         Map<String, JSONObject> allOperations = ResourceUtil.getAllOperationsForResources(apiDoc11);
-
         Map<String, JSONObject> apisByPath = ResourceUtil.getAllAPIsByResourcePath(apiDoc11);
 
         //this collection holds description given for each resource against the resource name.
@@ -306,8 +319,6 @@ public class ResourceUtil {
         // api-doc in 1.2 resource folder. following map collects this value from api-doc 1.1 and
         // store it to add to api-doc 1.2
         Map<String, String> descriptionsForResource = new HashMap<String, String>();
-
-
 
         String basePath = (String) apiDoc11.get(Constants.API_DOC_11_BASE_PATH);
         String resourcePath = (String) apiDoc11.get(Constants.API_DOC_11_RESOURCE_PATH);
@@ -328,7 +339,7 @@ public class ResourceUtil {
                 continue;
             }
 
-            Resource resource = re.get(docResourcePath);
+            Resource resource = registry.get(docResourcePath);
             JSONObject apiDoc =
                     (JSONObject) parser.parse(new String((byte[]) resource.getContent()));
 
@@ -348,7 +359,7 @@ public class ResourceUtil {
 
 
             //get the description for that resource. query the api list generated using api-doc 1.1
-            if(apisByPath.containsKey(key)) {
+            if (apisByPath.containsKey(key)) {
                 JSONObject apiInfo = apisByPath.get(key);
                 description = (String) apiInfo.get("description");
                 descriptionsForResource.put(resourceName, description);
@@ -358,35 +369,32 @@ public class ResourceUtil {
                     ResourceUtil.getUpdatedSwagger12Resource(apiDoc, allParameters, allOperations,
                             basePathForResource);
             log.info("\t update " + resourceName.substring(1));
-            Resource res = re.get(docResourcePath);
+            Resource res = registry.get(docResourcePath);
             res.setContent(updatedJson);
             //update the registry
-            re.put(docResourcePath, res);
-
+            registry.put(docResourcePath, res);
         }
 
         //update the api-doc. add the descriptions to each api resource
-        ResourceUtil.updateSwagger12APIdoc(apidoc12path, descriptionsForResource, re, parser);
-
+        ResourceUtil.updateSwagger12APIdoc(apidoc12path, descriptionsForResource, registry, parser);
     }
-
 
 
     /**
      * update the swagger 1.2 api-doc. This method updates the descriptions
-     * @param apidoc12path
-     * @param descriptionsForResource
-     * @param re
-     * @param parser
+     *
+     * @param apiDoc12Path            swagger v1.2 doc path
+     * @param descriptionsForResource resource description
+     * @param registry                registry
+     * @param parser                  json parser
      * @throws RegistryException
      * @throws ParseException
      */
-    private static void updateSwagger12APIdoc(String apidoc12path,
+    private static void updateSwagger12APIdoc(String apiDoc12Path,
                                               Map<String, String> descriptionsForResource,
-                                              Registry re, JSONParser parser)
-            throws RegistryException,
-            ParseException {
-        Resource res = re.get(apidoc12path);
+                                              Registry registry, JSONParser parser)
+            throws RegistryException, ParseException {
+        Resource res = registry.get(apiDoc12Path);
         JSONObject api12Doc = (JSONObject) parser.parse(new String((byte[]) res.getContent()));
         JSONArray apis = (JSONArray) api12Doc.get(Constants.API_DOC_12_APIS);
         for (int j = 0; j < apis.size(); j++) {
@@ -402,13 +410,14 @@ public class ResourceUtil {
         log.info("\t update api-doc");
         res.setContent(api12Doc.toJSONString());
         // update the registry
-        re.put(apidoc12path, res);
+        registry.put(apiDoc12Path, res);
     }
 
     /**
      * remove header and body parameters
-     * @param docResourcePaths
-     * @param registry
+     *
+     * @param docResourcePaths doc resource paths
+     * @param registry         registry
      * @throws RegistryException
      * @throws ParseException
      */
@@ -460,44 +469,41 @@ public class ResourceUtil {
                     }
                     operation.put("parameters", parametersNew);
                 }
-
-
             }
 
             resource.setContent(resourceDoc.toJSONString());
             //update the registry
             registry.put(docResourcePath, resource);
         }
-
     }
 
     /**
-     * extract the parameters from the url tempate.
-     * @param url
-     * @return
+     * extract the parameters from the url template.
+     *
+     * @param url url to get parameters
+     * @return parameter list
      */
     public static List<String> getURLTemplateParams(String url) {
         boolean endVal = false;
 
         List<String> params = new ArrayList<String>();
-        if(url.contains("{")){
+        if (url.contains("{")) {
 
             int start = 0;
             int end = 0;
-            for(int i = 0; i < url.length(); i++) {
-                if(url.charAt(i) == '{')
+            for (int i = 0; i < url.length(); i++) {
+                if (url.charAt(i) == '{')
                     start = i;
-                else if(url.charAt(i) == '}') {
+                else if (url.charAt(i) == '}') {
                     end = i;
                     endVal = true;
                 }
 
-                if(endVal){
+                if (endVal) {
                     params.add(url.substring(start + 1, end));
                     endVal = false;
                 }
             }
-
         }
         return params;
     }
@@ -513,7 +519,7 @@ public class ResourceUtil {
     public static String getSwagger2ResourceLocation(String apiName, String apiVersion,
                                                      String apiProvider) {
         return
-                APIConstants.API_ROOT_LOCATION + RegistryConstants.PATH_SEPARATOR +  apiProvider +
+                APIConstants.API_ROOT_LOCATION + RegistryConstants.PATH_SEPARATOR + apiProvider +
                         RegistryConstants.PATH_SEPARATOR + apiName + RegistryConstants.PATH_SEPARATOR + apiVersion + RegistryConstants.PATH_SEPARATOR + "swagger.json";
     }
 
@@ -545,5 +551,157 @@ public class ResourceUtil {
             databaseType = "ORACLE";
         }
         return databaseType;
+    }
+
+    /**
+     * This method picks the query according to the users database
+     * @param migrateVersion migrate version
+     * @return exact query to execute
+     * @throws SQLException
+     * @throws APIManagementException
+     * @throws IOException
+     */
+    public static String pickQueryFromResources(String migrateVersion) throws SQLException, APIManagementException, IOException {
+        String databaseType = getDatabaseDriverName();
+        String queryTobeExecuted = null;
+        String resourcePath;
+
+        if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
+            //pick from 18to19Migration/sql-scripts
+            resourcePath = "/18to19Migration/sql-scripts/";
+
+        } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
+            //pick from 17to18Migration/sql-scripts
+            resourcePath = "/17to18Migration/sql-scripts/";
+        } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
+            //pick from 16to17Migration/sql-scripts
+            resourcePath = "/16to17Migration/sql-scripts/";
+        } else {
+            throw new APIManagementException("No query picked up for the given migrate version. Please check the migrate version.");
+        }
+
+        if (!resourcePath.equals("")) {
+            InputStream inputStream;
+            try {
+                if (databaseType.equalsIgnoreCase("MYSQL")) {
+                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "mysql.sql");
+                } else if (databaseType.equalsIgnoreCase("MSSQL")) {
+                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "mssql.sql");
+                } else if (databaseType.equalsIgnoreCase("H2")) {
+                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "h2.sql");
+                } else if (databaseType.equalsIgnoreCase("ORACLE")) {
+                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "oracle.sql");
+                } else {
+                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "postgresql.sql");
+                }
+
+                queryTobeExecuted = IOUtils.toString(inputStream);
+
+            } catch (IOException e) {
+                throw new IOException("Error occurred while accessing the sql from resources. " + e);
+            }
+        }
+        return queryTobeExecuted;
+    }
+
+    /**
+     * To handle exceptions
+     *
+     * @param msg error message
+     * @throws APIManagementException
+     */
+    public static void handleException(String msg) throws APIManagementException {
+        log.error(msg);
+        throw new APIManagementException(msg);
+    }
+
+    /**
+     * To copy a new sequence to existing ones
+     *
+     * @param sequenceDirectoryFilePath sequence directory
+     * @param sequenceName              sequence name
+     * @throws APIManagementException
+     */
+    public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath, String sequenceName) throws APIManagementException {
+        try {
+            String namespace = "http://ws.apache.org/ns/synapse";
+            String filePath = sequenceDirectoryFilePath + sequenceName + ".xml";
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            docFactory.setNamespaceAware(true);
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+            Document doc = docBuilder.parse(filePath);
+            Node sequence = doc.getFirstChild();
+            Element corsHandler = doc.createElementNS(namespace, "sequence");
+            corsHandler.setAttribute("key", "_cors_request_handler");
+            if (!"_token_fault_".equals(sequenceName) || !"fault".equals(sequenceName)) {
+                sequence.appendChild(corsHandler);
+            } else {
+                sequence.insertBefore(corsHandler, doc.getElementsByTagName("send").item(0));
+            }
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(doc);
+            StreamResult result = new StreamResult(new File(filePath));
+            transformer.transform(source, result);
+        } catch (ParserConfigurationException pce) {
+            handleException(pce.getMessage());
+        } catch (TransformerException tfe) {
+            handleException(tfe.getMessage());
+        } catch (IOException ioe) {
+            handleException(ioe.getMessage());
+        } catch (SAXException sae) {
+            handleException(sae.getMessage());
+        }
+    }
+
+    /**
+     * To update synapse API
+     *
+     * @param filePath       file path
+     * @param implementation new impl
+     * @throws APIManagementException
+     */
+    public static void updateSynapseAPI(File filePath, String implementation) throws APIManagementException {
+        try {
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+            docFactory.setNamespaceAware(true);
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+            Document doc = null;
+            doc = docBuilder.parse(filePath.getAbsolutePath());
+            Node sequence = doc.getFirstChild();
+            //     <handler class="org.wso2.carbon.apimgt.gateway.handlers.security.CORSRequestHandler">
+            //   <property name="inline" value="endpoint"/>
+            // </handler>
+            // <handler class="org.wso2.carbon.apimgt.gateway.handlers.security.APIAuthenticationHandler"/>
+            Node handlers = doc.getElementsByTagName("handlers").item(0);
+            Element corsHandler = doc.createElement("handler");
+            corsHandler.setAttribute("class", "org.wso2.carbon.apimgt.gateway.handlers.security.CORSRequestHandler");
+            Element property = doc.createElement("property");
+            property.setAttribute("name", "inline");
+            property.setAttribute("value", implementation);
+            corsHandler.appendChild(property);
+            NodeList handlerNodes = doc.getElementsByTagName("handler");
+            for (int i = 0; i < handlerNodes.getLength(); i++) {
+                Node tempNode = handlerNodes.item(i);
+                if ("org.wso2.carbon.apimgt.gateway.handlers.security.CORSRequestHandler"
+                        .equals(tempNode.getAttributes().getNamedItem("class").getTextContent())) {
+                    handlers.removeChild(tempNode);
+                }
+                handlers.insertBefore(corsHandler, handlerNodes.item(0));
+            }
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(doc);
+            StreamResult result = new StreamResult(filePath);
+            transformer.transform(source, result);
+        } catch (ParserConfigurationException pce) {
+            handleException(pce.getMessage());
+        } catch (TransformerException tfe) {
+            handleException(tfe.getMessage());
+        } catch (IOException ioe) {
+            handleException(ioe.getMessage());
+        } catch (SAXException sae) {
+            handleException(sae.getMessage());
+        }
     }
 }
