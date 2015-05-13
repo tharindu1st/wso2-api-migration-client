@@ -73,32 +73,37 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
     @Override
-    public void databaseMigration(String migrateVersion) throws APIManagementException {
+    public void databaseMigration(String migrateVersion) throws APIManagementException, SQLException {
         log.info("Database migration for API Manager 1.8.0 started");
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
         try {
-            String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion);
+            String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion).trim();
 
-            Connection connection = APIMgtDBUtil.getConnection();
+            String queryArray[] = queryToExecute.split("\\n");
+
+            connection = APIMgtDBUtil.getConnection();
             connection.setAutoCommit(false);
 
-            PreparedStatement preparedStatement = connection.prepareStatement(queryToExecute);
-            boolean isUpdated = preparedStatement.execute();
-            if (isUpdated) {
+            for (String query : queryArray) {
+                preparedStatement = connection.prepareStatement(query);
+                preparedStatement.execute();
                 connection.commit();
-            } else {
-                connection.rollback();
+                preparedStatement.close();
             }
-            preparedStatement.close();
 
             if (log.isDebugEnabled()) {
                 log.debug("Query " + queryToExecute + " executed ");
             }
 
-            connection.close();
         } catch (SQLException e) {
             ResourceUtil.handleException(e.getMessage());
         } catch (IOException e) {
             ResourceUtil.handleException(e.getMessage());
+        } finally {
+            if(connection != null) {
+                connection.close();
+            }
         }
         log.info("DB resource migration done for all the tenants");
     }
