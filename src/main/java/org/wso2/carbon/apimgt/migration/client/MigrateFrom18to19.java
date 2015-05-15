@@ -35,7 +35,6 @@ import org.wso2.carbon.apimgt.migration.util.Constants;
 import org.wso2.carbon.apimgt.migration.util.ResourceUtil;
 import org.wso2.carbon.base.MultitenantConstants;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
-import org.wso2.carbon.governance.api.exception.GovernanceException;
 import org.wso2.carbon.governance.api.generic.GenericArtifactManager;
 import org.wso2.carbon.governance.api.generic.dataobjects.GenericArtifact;
 import org.wso2.carbon.governance.api.util.GovernanceUtils;
@@ -56,7 +55,12 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @SuppressWarnings("unchecked")
 /**
@@ -80,7 +84,7 @@ public class MigrateFrom18to19 implements MigrationClient {
      * This method will migrate database
      *
      * @param migrateVersion version to be migrated
-     * @throws APIManagementException
+     * @throws APIMigrationException
      * @throws SQLException
      */
     @Override
@@ -108,11 +112,11 @@ public class MigrateFrom18to19 implements MigrationClient {
             }
 
         } catch (SQLException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException("SQL Exception occurred while executing the query", e);
         } catch (IOException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException("IO Exception occurred while searching the sql scrip file", e);
         } finally {
-            if(connection != null) {
+            if (connection != null) {
                 connection.close();
             }
         }
@@ -122,7 +126,7 @@ public class MigrateFrom18to19 implements MigrationClient {
     /**
      * Registry resource Migrations
      *
-     * @throws APIManagementException
+     * @throws APIMigrationException
      */
     @Override
     public void registryResourceMigration() throws APIMigrationException {
@@ -133,7 +137,7 @@ public class MigrateFrom18to19 implements MigrationClient {
     /**
      * File System Migrations
      *
-     * @throws APIManagementException
+     * @throws APIMigrationException
      */
     @Override
     public void fileSystemMigration() throws APIMigrationException {
@@ -144,7 +148,7 @@ public class MigrateFrom18to19 implements MigrationClient {
     /**
      * Swagger Resource Migrations
      *
-     * @throws APIManagementException
+     * @throws APIMigrationException
      */
     void swaggerResourceMigration() throws APIMigrationException {
         log.info("Swagger migration for API Manager 1.9.0 started");
@@ -196,15 +200,6 @@ public class MigrateFrom18to19 implements MigrationClient {
                         docContent.setMediaType("application/json");
                         registry.put(swagger2location, docContent);
 
-
-                        //Find the visible roles of to set to the resource
-                            /*String visibleRolesList = api.getVisibleRoles();
-                            String[] visibleRoles = new String[0];
-                            if (visibleRolesList != null) {
-                                visibleRoles = visibleRolesList.split(",");
-                            }*/
-
-
                         //Currently set to ANONYMOUS_ROLE, need to set to visible roles
                         ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId()).getAuthorizationManager().authorizeRole(APIConstants.ANONYMOUS_ROLE,
                                 "_system/governance" + swagger2location, ActionConstants.GET);
@@ -213,19 +208,16 @@ public class MigrateFrom18to19 implements MigrationClient {
                     }
                 }
             }
-        } catch (ParseException e) {
-            ResourceUtil.handleException(e.getMessage());//@todo:throw meaningful messages and introduce a new exceptions as
-            // api migration exception
-        } catch (GovernanceException e) {
-            ResourceUtil.handleException(e.getMessage());
         } catch (MalformedURLException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException("Malformed URL Exception occurred while migrating swagger v2.0 document", e);
         } catch (APIManagementException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException("APIManagement Exception  occurred while migrating swagger v2.0 document", e);
         } catch (RegistryException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException("Registry Exception  occurred while migrating swagger v2.0 document", e);
+        } catch (ParseException e) {
+            ResourceUtil.handleException("Parse Exception occurred while migrating swagger v2.0 document", e);
         } catch (UserStoreException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException("User Store Exception occurred while migrating swagger v2.0 document", e);
         } finally {
             PrivilegedCarbonContext.endTenantFlow();
         }
@@ -237,7 +229,7 @@ public class MigrateFrom18to19 implements MigrationClient {
     /**
      * RXT Migrations
      *
-     * @throws APIManagementException
+     * @throws APIMigrationException
      */
     //@todo : change the default api.rxt as well
     void rxtMigration() throws APIMigrationException {
@@ -261,21 +253,19 @@ public class MigrateFrom18to19 implements MigrationClient {
                     artifactManager.updateGenericArtifact(artifact);
                 }
             }
-        } catch (UserStoreException e) {
-            ResourceUtil.handleException(e.getMessage());
-        } catch (GovernanceException e) {
-            ResourceUtil.handleException(e.getMessage());
-        } catch (RegistryException e) {
-            ResourceUtil.handleException(e.getMessage());
         } catch (APIManagementException e) {
-            e.printStackTrace();
+            ResourceUtil.handleException("API Management Exception occurred while migrating rxt.", e);
+        } catch (UserStoreException e) {
+            ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
+        } catch (RegistryException e) {
+            ResourceUtil.handleException("Error occurred while accessing the registry.", e);
         }
     }
 
     /**
      * To clean old registry resources
      *
-     * @throws APIManagementException
+     * @throws APIMigrationException
      */
     @Override
     public void cleanOldResources() throws APIMigrationException {
@@ -315,14 +305,12 @@ public class MigrateFrom18to19 implements MigrationClient {
 
                 }
             }
-        } catch (UserStoreException e) {
-            ResourceUtil.handleException(e.getMessage());
-        } catch (GovernanceException e) {
-            ResourceUtil.handleException(e.getMessage());
-        } catch (RegistryException e) {
-            ResourceUtil.handleException(e.getMessage());
         } catch (APIManagementException e) {
-            e.printStackTrace();
+            ResourceUtil.handleException("API Management Exception occurred while migrating rxt.", e);
+        } catch (UserStoreException e) {
+            ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
+        } catch (RegistryException e) {
+            ResourceUtil.handleException("Error occurred while accessing the registry.", e);
         }
     }
 
@@ -346,13 +334,10 @@ public class MigrateFrom18to19 implements MigrationClient {
                 ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_token_fault_");
                 ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "fault");
             } catch (IOException e) {
-                ResourceUtil.handleException(e.getMessage());
-            } catch (APIMigrationException e) {
-                e.printStackTrace();
+                ResourceUtil.handleException("Error occurred while reading file to copy.", e);
             }
         }
     }
-
 
 
     //@todo : read from fs
@@ -402,14 +387,12 @@ public class MigrateFrom18to19 implements MigrationClient {
                     }
                 }
 
-            } catch (UserStoreException e) {
-                ResourceUtil.handleException(e.getMessage());
-            } catch (GovernanceException e) {
-                ResourceUtil.handleException(e.getMessage());
-            } catch (RegistryException e) {
-                ResourceUtil.handleException(e.getMessage());
             } catch (APIManagementException e) {
-                e.printStackTrace();
+                ResourceUtil.handleException("API Management Exception occurred while migrating rxt.", e);
+            } catch (UserStoreException e) {
+                ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
+            } catch (RegistryException e) {
+                ResourceUtil.handleException("Error occurred while accessing the registry.", e);
             } finally {
                 PrivilegedCarbonContext.endTenantFlow();
             }
@@ -483,7 +466,6 @@ public class MigrateFrom18to19 implements MigrationClient {
      */
 
     //@todo: check swagger v2 spec and add mandatory ones
-
     private static JSONObject generateSwagger2Document(JSONObject swagger12doc,
                                                        Map<String, JSONArray> apiDefPaths, String swagger12BasePath)
             throws ParseException, MalformedURLException {
@@ -522,7 +504,7 @@ public class MigrateFrom18to19 implements MigrationClient {
     /**
      * Generate swagger v2 security definition object
      * See <a href="https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#securityDefinitionsObject">
-     *     Swagger v2 definition object</a>
+     * Swagger v2 definition object</a>
      *
      * @param swagger12doc Old Swagger Document
      * @return security definition object

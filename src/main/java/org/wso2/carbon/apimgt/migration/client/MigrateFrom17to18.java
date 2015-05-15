@@ -77,9 +77,9 @@ public class MigrateFrom17to18 implements MigrationClient {
             connection.close();
 
         } catch (SQLException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException(e.getMessage(), e);
         } catch (IOException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException(e.getMessage(), e);
         }
         log.info("DB resource migration done for all the tenants");
     }
@@ -183,13 +183,13 @@ public class MigrateFrom17to18 implements MigrationClient {
                 }
             }
         } catch (ParseException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException(e.getMessage(), e);
         } catch (GovernanceException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException(e.getMessage(), e);
         } catch (UserStoreException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException(e.getMessage(), e);
         } catch (RegistryException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException(e.getMessage(), e);
         } catch (APIManagementException e) {
             e.printStackTrace();
         } finally {
