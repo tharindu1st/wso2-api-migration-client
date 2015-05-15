@@ -29,9 +29,10 @@ import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
+import org.wso2.carbon.apimgt.migration.APIMigrationException;
 import org.wso2.carbon.apimgt.migration.client.internal.ServiceHolder;
-import org.wso2.carbon.apimgt.migration.client.util.Constants;
-import org.wso2.carbon.apimgt.migration.client.util.ResourceUtil;
+import org.wso2.carbon.apimgt.migration.util.Constants;
+import org.wso2.carbon.apimgt.migration.util.ResourceUtil;
 import org.wso2.carbon.base.MultitenantConstants;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.governance.api.exception.GovernanceException;
@@ -58,6 +59,9 @@ import java.sql.SQLException;
 import java.util.*;
 
 @SuppressWarnings("unchecked")
+/**
+ * Class comment
+ */
 public class MigrateFrom18to19 implements MigrationClient {
 
     private static final Log log = LogFactory.getLog(MigrateFrom18to19.class);
@@ -80,14 +84,14 @@ public class MigrateFrom18to19 implements MigrationClient {
      * @throws SQLException
      */
     @Override
-    public void databaseMigration(String migrateVersion) throws APIManagementException, SQLException {
+    public void databaseMigration(String migrateVersion) throws APIMigrationException, SQLException {
         log.info("Database migration for API Manager 1.8.0 started");
         Connection connection = null;
         PreparedStatement preparedStatement = null;
         try {
             String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion).trim();
 
-            String queryArray[] = queryToExecute.split("\\n");//Best way to handle?
+            String queryArray[] = queryToExecute.split("\\n");//use local db creator
 
             connection = APIMgtDBUtil.getConnection();
             connection.setAutoCommit(false);
@@ -121,7 +125,7 @@ public class MigrateFrom18to19 implements MigrationClient {
      * @throws APIManagementException
      */
     @Override
-    public void registryResourceMigration() throws APIManagementException {
+    public void registryResourceMigration() throws APIMigrationException {
         swaggerResourceMigration();
         rxtMigration();
     }
@@ -132,7 +136,7 @@ public class MigrateFrom18to19 implements MigrationClient {
      * @throws APIManagementException
      */
     @Override
-    public void fileSystemMigration() throws APIManagementException {
+    public void fileSystemMigration() throws APIMigrationException {
         synapseAPIMigration();
         sequenceMigration();
     }
@@ -142,7 +146,7 @@ public class MigrateFrom18to19 implements MigrationClient {
      *
      * @throws APIManagementException
      */
-    void swaggerResourceMigration() throws APIManagementException {
+    void swaggerResourceMigration() throws APIMigrationException {
         log.info("Swagger migration for API Manager 1.9.0 started");
         try {
 
@@ -210,7 +214,8 @@ public class MigrateFrom18to19 implements MigrationClient {
                 }
             }
         } catch (ParseException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException(e.getMessage());//@todo:throw meaningful messages and introduce a new exceptions as
+            // api migration exception
         } catch (GovernanceException e) {
             ResourceUtil.handleException(e.getMessage());
         } catch (MalformedURLException e) {
@@ -234,12 +239,15 @@ public class MigrateFrom18to19 implements MigrationClient {
      *
      * @throws APIManagementException
      */
-    void rxtMigration() throws APIManagementException {
+    //@todo : change the default api.rxt as well
+    void rxtMigration() throws APIMigrationException {
         try {
             for (Tenant tenant : tenantsArray) {
-                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId()).getRealmConfiguration().getAdminUserName();
+                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId())
+                        .getRealmConfiguration().getAdminUserName();
                 ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
-                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant.getId());
+                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant
+                        .getId());
                 GenericArtifactManager artifactManager = APIUtil.getArtifactManager(registry, APIConstants.API_KEY);
                 GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
                 GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
@@ -260,7 +268,7 @@ public class MigrateFrom18to19 implements MigrationClient {
         } catch (RegistryException e) {
             ResourceUtil.handleException(e.getMessage());
         } catch (APIManagementException e) {
-            ResourceUtil.handleException(e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -270,7 +278,7 @@ public class MigrateFrom18to19 implements MigrationClient {
      * @throws APIManagementException
      */
     @Override
-    public void cleanOldResources() throws APIManagementException {
+    public void cleanOldResources() throws APIMigrationException {
         try {
             for (Tenant tenant : tenantsArray) {
                 log.info("Swagger migration for tenant " + tenant.getDomain() + "[" + tenant.getId() + "]" + " ");
@@ -313,10 +321,12 @@ public class MigrateFrom18to19 implements MigrationClient {
             ResourceUtil.handleException(e.getMessage());
         } catch (RegistryException e) {
             ResourceUtil.handleException(e.getMessage());
+        } catch (APIManagementException e) {
+            e.printStackTrace();
         }
     }
 
-    void sequenceMigration() throws APIManagementException {
+    void sequenceMigration() throws APIMigrationException {
         String repository = CarbonUtils.getCarbonRepository();
         String TenantRepo = CarbonUtils.getCarbonTenantsDirPath();
         for (Tenant tenant : tenantsArray) {
@@ -337,12 +347,16 @@ public class MigrateFrom18to19 implements MigrationClient {
                 ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "fault");
             } catch (IOException e) {
                 ResourceUtil.handleException(e.getMessage());
+            } catch (APIMigrationException e) {
+                e.printStackTrace();
             }
         }
     }
 
 
-    void synapseAPIMigration() throws APIManagementException {
+
+    //@todo : read from fs
+    void synapseAPIMigration() throws APIMigrationException {
         String repository = CarbonUtils.getCarbonRepository();
         String tenantRepository = CarbonUtils.getCarbonTenantsDirPath();
         for (Tenant tenant : tenantsArray) {
@@ -394,11 +408,14 @@ public class MigrateFrom18to19 implements MigrationClient {
                 ResourceUtil.handleException(e.getMessage());
             } catch (RegistryException e) {
                 ResourceUtil.handleException(e.getMessage());
+            } catch (APIManagementException e) {
+                e.printStackTrace();
             } finally {
                 PrivilegedCarbonContext.endTenantFlow();
             }
         }
     }
+
 
     /**
      * Generates swagger v2 doc using swagger 1.2 doc
@@ -465,8 +482,11 @@ public class MigrateFrom18to19 implements MigrationClient {
      * @throws MalformedURLException
      */
 
+    //@todo: check swagger v2 spec and add mandatory ones
+
     private static JSONObject generateSwagger2Document(JSONObject swagger12doc,
-                                                       Map<String, JSONArray> apiDefPaths, String swagger12BasePath) throws ParseException, MalformedURLException {
+                                                       Map<String, JSONArray> apiDefPaths, String swagger12BasePath)
+            throws ParseException, MalformedURLException {
         //create swagger 2.0 doc
         JSONObject swagger20doc = new JSONObject();
 
@@ -501,7 +521,8 @@ public class MigrateFrom18to19 implements MigrationClient {
 
     /**
      * Generate swagger v2 security definition object
-     * See <a href="https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#securityDefinitionsObject">Swagger v2 definition object</a>
+     * See <a href="https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#securityDefinitionsObject">
+     *     Swagger v2 definition object</a>
      *
      * @param swagger12doc Old Swagger Document
      * @return security definition object
@@ -528,7 +549,8 @@ public class MigrateFrom18to19 implements MigrationClient {
 
     /**
      * generate swagger v2 info object using swagger 1.2 doc.
-     * See <a href="https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#infoObject">Swagger v2 info object</a>
+     * See <a href="https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#infoObject">Swagger v2 info
+     * object</a>
      *
      * @param swagger12doc Old Swagger Document
      * @return swagger v2 infoObject
@@ -584,7 +606,8 @@ public class MigrateFrom18to19 implements MigrationClient {
 
     /**
      * Generate Swagger v2 paths object from swagger v1.2 document
-     * See <a href="https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#paths-object">Swagger v2 paths object</a>
+     * See <a href="https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#paths-object">Swagger v2
+     * paths object</a>
      *
      * @param apiDefinitionPaths API definition paths
      * @return swagger v2 paths object
@@ -618,7 +641,8 @@ public class MigrateFrom18to19 implements MigrationClient {
                     newParameters.add(paramObj);
                 }
 
-                //generate the Operation object (https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#operationObject)
+                //generate the Operation object
+                // (https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#operationObject)
                 swagger2OperationsObj.put("operationId", operationObject.get("nickname"));
                 //setting operation level params
                 swagger2OperationsObj.put("parameters", newParameters);
