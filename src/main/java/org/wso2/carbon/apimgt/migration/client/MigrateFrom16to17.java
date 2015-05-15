@@ -34,9 +34,10 @@ import org.wso2.carbon.apimgt.api.model.URITemplate;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
+import org.wso2.carbon.apimgt.migration.APIMigrationException;
 import org.wso2.carbon.apimgt.migration.client.internal.ServiceHolder;
-import org.wso2.carbon.apimgt.migration.client.util.Constants;
-import org.wso2.carbon.apimgt.migration.client.util.ResourceUtil;
+import org.wso2.carbon.apimgt.migration.util.Constants;
+import org.wso2.carbon.apimgt.migration.util.ResourceUtil;
 import org.wso2.carbon.base.MultitenantConstants;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.governance.api.common.dataobjects.GovernanceArtifact;
@@ -85,7 +86,7 @@ public class MigrateFrom16to17 implements MigrationClient {
 
 
     @Override
-    public void databaseMigration(String migrateVersion) throws APIManagementException {
+    public void databaseMigration(String migrateVersion) throws APIMigrationException {
         log.info("Database migration for API Manager 1.8.0 started");
         try {
             String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion);
@@ -114,13 +115,13 @@ public class MigrateFrom16to17 implements MigrationClient {
     }
 
     @Override
-    public void registryResourceMigration() throws APIManagementException {
+    public void registryResourceMigration() throws APIMigrationException {
         swaggerResourceMigration();
         registryMigration();
     }
 
     @Override
-    public void fileSystemMigration() throws APIManagementException {
+    public void fileSystemMigration() throws  APIMigrationException {
         synapseConfigMigration();
     }
 
@@ -129,7 +130,7 @@ public class MigrateFrom16to17 implements MigrationClient {
 
     }
 
-    public void synapseConfigMigration() throws APIManagementException {
+    public void synapseConfigMigration() throws APIMigrationException {
         String apiHome = CarbonUtils.getCarbonHome();
         log.info("Modifying carbon.super APIs");
 
@@ -248,7 +249,7 @@ public class MigrateFrom16to17 implements MigrationClient {
 
     }
 
-    public void swaggerResourceMigration() throws APIManagementException {
+    public void swaggerResourceMigration() throws APIMigrationException {
         log.info("Swagger migration for API Manager 1.7.0 started");
 
         try {
@@ -324,12 +325,14 @@ public class MigrateFrom16to17 implements MigrationClient {
             ResourceUtil.handleException(e.getMessage());
         } catch (UserStoreException e) {
             ResourceUtil.handleException(e.getMessage());
+        } catch (APIManagementException e) {
+            ResourceUtil.handleException(e.getMessage());
         } finally {
             PrivilegedCarbonContext.endTenantFlow();
         }
     }
 
-    public void registryMigration() throws APIManagementException {
+    public void registryMigration() throws APIMigrationException {
         log.info("Registry migration for API Manager 1.7.0 started");
         try {
             TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
@@ -541,6 +544,8 @@ public class MigrateFrom16to17 implements MigrationClient {
             ResourceUtil.handleException(e.getMessage());
         } catch (RegistryException e) {
             ResourceUtil.handleException(e.getMessage());
+        } catch (APIManagementException e) {
+            ResourceUtil.handleException(e.getMessage());
         }
     }
 
@@ -587,7 +592,7 @@ public class MigrateFrom16to17 implements MigrationClient {
      * @throws org.wso2.carbon.registry.core.exceptions.RegistryException
      */
     private static void updateSwagger12ResourcesUsingSwagger11Doc(APIIdentifier apiIdentifier, Registry registry)
-            throws APIManagementException, RegistryException {
+            throws APIMigrationException, RegistryException {
 
         String apiName = apiIdentifier.getApiName();
         String apiProviderName = apiIdentifier.getProviderName();
@@ -604,7 +609,7 @@ public class MigrateFrom16to17 implements MigrationClient {
         try {
             ResourceUtil.updateAPISwaggerDocs(apiDef11Json, resourcePaths, registry);
         } catch (ParseException e) {
-            throw new APIManagementException("Unable to parse registry resource", e);
+            throw new APIMigrationException("Unable to parse registry resource", e);
         }
 
     }
@@ -649,7 +654,7 @@ public class MigrateFrom16to17 implements MigrationClient {
      * @throws UserStoreException
      */
     public static void createSwagger12Resources(GovernanceArtifact artifact, Registry registry,
-                                                API api, Tenant tenant) throws UserStoreException, APIManagementException {
+                                                API api, Tenant tenant) throws UserStoreException, APIMigrationException {
 
         JSONParser parser = new JSONParser();
 
@@ -814,9 +819,9 @@ public class MigrateFrom16to17 implements MigrationClient {
 
         } catch (GovernanceException e) {
             String msg = "Failed to get API fro artifact ";
-            throw new APIManagementException(msg, e);
+            throw new APIMigrationException(msg, e);
         } catch (ParseException e) {
-            throw new APIManagementException(
+            throw new APIMigrationException(
                     "Error while generating swagger 1.2 resource for api ", e);
         }
     }

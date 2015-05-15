@@ -18,6 +18,7 @@ package org.wso2.carbon.apimgt.migration.client;
 
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.impl.workflow.WorkflowException;
+import org.wso2.carbon.apimgt.migration.APIMigrationException;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.xml.sax.SAXException;
@@ -29,18 +30,22 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 /**
- * Public interface for all migrations
+ * Public interface for all migrations.
+ * All the migrations after 1.8.0 to 1.9.0 migrations
  *
  */
 @SuppressWarnings("unused")
 public interface MigrationClient {
 
     /**
-     * This method is used to migrate database resources
+     * This method is used to migrate databases. This method adds the newly added columns, tables and alters the tables
+     * according to the new database
      *
+     * @param migrateVersion version to be migrated
      * @throws APIManagementException
+     * @throws SQLException
      */
-    public void databaseMigration(String migrateVersion) throws APIManagementException, SQLException;
+    public void databaseMigration(String migrateVersion) throws APIMigrationException, SQLException;
 
     /**
      * This method is used to migrate all the registry resources
@@ -48,21 +53,24 @@ public interface MigrationClient {
      *
      * @throws APIManagementException
      */
-    public void registryResourceMigration() throws APIManagementException;
+    public void registryResourceMigration() throws APIMigrationException;
 
 
     /**
+     * This method is used to migrate all file system resources.
+     * Synapse APIs and sequences will be migrate from ths
      *
      * @throws APIManagementException
      */
-    public void fileSystemMigration() throws APIManagementException;
+    public void fileSystemMigration() throws APIMigrationException;
 
 
     /**
-     * This method is used to clean old resources from registry
+     * This method is used to clean old resources from registry.
+     * All older registry resources will be removed here
      *
      * @throws APIManagementException
      */
-    public void cleanOldResources() throws APIManagementException;
+    public void cleanOldResources() throws APIMigrationException;
 
 }

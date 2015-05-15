@@ -22,22 +22,15 @@ import org.osgi.service.component.ComponentContext;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.impl.APIManagerConfigurationService;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
-import org.wso2.carbon.apimgt.migration.client.MigrateFrom16to17;
-import org.wso2.carbon.apimgt.migration.client.MigrateFrom17to18;
+import org.wso2.carbon.apimgt.migration.APIMigrationException;
 import org.wso2.carbon.apimgt.migration.client.MigrateFrom18to19;
 import org.wso2.carbon.apimgt.migration.client.MigrationClient;
-import org.wso2.carbon.apimgt.migration.client.util.Constants;
-import org.wso2.carbon.registry.core.exceptions.RegistryException;
+import org.wso2.carbon.apimgt.migration.util.Constants;
 import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.registry.core.service.TenantRegistryLoader;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.service.RealmService;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.xpath.XPathExpressionException;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -185,7 +178,7 @@ public class APIMMigrationServiceComponent {
                         log.debug("API Manager 1.7.0 to 1.8.0 migration successfully completed");
                     }
                 } */
-                if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
+                if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {//change the
                     log.info("Migrating WSO2 API Manager 1.8.0 resources to WSO2 API Manager 1.9.0");
                     // Create a thread and wait till the APIManager DBUtils is initialized
 
@@ -196,7 +189,7 @@ public class APIMMigrationServiceComponent {
                         log.info("Migrating WSO2 API Manager 1.8.0 resources to WSO2 API Manager 1.9.0");
                         migrateFrom18to19.databaseMigration(migrateVersion);
                         migrateFrom18to19.registryResourceMigration();
-                        //migrateFrom18to19.fileSystemMigration();
+                        migrateFrom18to19.fileSystemMigration();
                     } else {
                         //Only performs database migration
                         if (isDBMigrationNeeded) {
@@ -227,7 +220,7 @@ public class APIMMigrationServiceComponent {
                     log.warn("The migrate version " + migrateVersion + " is not supported. Please check the version and try again.");
                 }
             }
-        } catch (APIManagementException e) {
+        } catch (APIMigrationException e) {
             log.error("API Management  exception occurred while migrating " + e.getMessage());
         } catch (UserStoreException e) {
             log.error("User store  exception occurred while migrating " + e.getMessage());

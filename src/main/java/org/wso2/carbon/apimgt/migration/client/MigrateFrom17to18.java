@@ -24,9 +24,10 @@ import org.wso2.carbon.apimgt.api.model.API;
 import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
+import org.wso2.carbon.apimgt.migration.APIMigrationException;
 import org.wso2.carbon.apimgt.migration.client.internal.ServiceHolder;
-import org.wso2.carbon.apimgt.migration.client.util.Constants;
-import org.wso2.carbon.apimgt.migration.client.util.ResourceUtil;
+import org.wso2.carbon.apimgt.migration.util.Constants;
+import org.wso2.carbon.apimgt.migration.util.ResourceUtil;
 import org.wso2.carbon.base.MultitenantConstants;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.governance.api.exception.GovernanceException;
@@ -53,7 +54,7 @@ public class MigrateFrom17to18 implements MigrationClient {
     private static final Log log = LogFactory.getLog(MigrateFrom17to18.class);
 
     @Override
-    public void databaseMigration(String migrateVersion) throws APIManagementException {
+    public void databaseMigration(String migrateVersion) throws APIMigrationException {
         log.info("Database migration for API Manager 1.8.0 started");
         try {
             String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion);
@@ -84,7 +85,7 @@ public class MigrateFrom17to18 implements MigrationClient {
     }
 
     @Override
-    public void registryResourceMigration() throws APIManagementException {
+    public void registryResourceMigration() throws APIMigrationException {
         swaggerResourceMigration();
     }
 
@@ -99,7 +100,7 @@ public class MigrateFrom17to18 implements MigrationClient {
     }
 
 
-    public void swaggerResourceMigration() throws APIManagementException {
+    public void swaggerResourceMigration() throws APIMigrationException {
         log.info("Swagger migration for API Manager 1.8.0 started");
 
         TenantManager tenantManager = ServiceHolder.getRealmService().getTenantManager();
@@ -189,6 +190,8 @@ public class MigrateFrom17to18 implements MigrationClient {
             ResourceUtil.handleException(e.getMessage());
         } catch (RegistryException e) {
             ResourceUtil.handleException(e.getMessage());
+        } catch (APIManagementException e) {
+            e.printStackTrace();
         } finally {
             PrivilegedCarbonContext.endTenantFlow();
         }

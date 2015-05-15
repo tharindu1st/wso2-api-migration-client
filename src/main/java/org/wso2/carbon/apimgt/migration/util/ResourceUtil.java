@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.wso2.carbon.apimgt.migration.client.util;
+package org.wso2.carbon.apimgt.migration.util;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -29,6 +29,7 @@ import org.w3c.dom.NodeList;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
+import org.wso2.carbon.apimgt.migration.APIMigrationException;
 import org.wso2.carbon.registry.core.Registry;
 import org.wso2.carbon.registry.core.RegistryConstants;
 import org.wso2.carbon.registry.core.Resource;
@@ -197,16 +198,17 @@ public class ResourceUtil {
      */
     public static String getUpdatedSwagger12Resource(JSONObject resource,
                                                      Map<String, JSONArray> allParameters,
-                                                     Map<String, JSONObject> allOperations, String basePath) {
+                                                     Map<String, JSONObject> allOperations, String basePath) throws
+            APIMigrationException {
 
         JSONArray apis = (JSONArray) resource.get(Constants.API_DOC_12_APIS);
-        for (int i = 0; i < apis.size(); i++) {
-            JSONObject apiInfo = (JSONObject) apis.get(i);
+        for (Object api : apis) {
+            JSONObject apiInfo = (JSONObject) api;
             String path = (String) apiInfo.get(Constants.API_DOC_12_PATH);
             JSONArray operations = (JSONArray) apiInfo.get(Constants.API_DOC_12_OPERATIONS);
 
-            for (int j = 0; j < operations.size(); j++) {
-                JSONObject operation = (JSONObject) operations.get(j);
+            for (Object operationObj : operations) {
+                JSONObject operation = (JSONObject) operationObj;
                 String method = (String) operation.get(Constants.API_DOC_12_METHOD);
 
                 // nickname is method name + "_" + path without starting "/"
@@ -221,8 +223,8 @@ public class ResourceUtil {
                     parameters = allParameters.get(key);
 
                     //setting the 'type' to 'string' if this variable is missing
-                    for (int m = 0; m < parameters.size(); m++) {
-                        JSONObject para = (JSONObject) parameters.get(m);
+                    for (Object parameter : parameters) {
+                        JSONObject para = (JSONObject) parameter;
                         if (!para.containsKey("type")) {
                             para.put("type", "string");
                         }
@@ -244,16 +246,15 @@ public class ResourceUtil {
                                 paramObj.put("name", p);
                                 parameters.add(paramObj);
                             } catch (ParseException e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
+                                throw new APIMigrationException("Could not parse default parameter url template", e);
                             }
                         }
                     }
                     // add parameters array
                     operation.put(Constants.API_DOC_12_PARAMETERS, parameters);
                 } else {
-                    for (int k = 0; k < existingParams.size(); k++) {
-                        parameters.add(existingParams.get(k));
+                    for (Object existingParam : existingParams) {
+                        parameters.add(existingParam);
                     }
                     operation.put(Constants.API_DOC_12_PARAMETERS, parameters);
                 }
@@ -304,7 +305,7 @@ public class ResourceUtil {
      * @throws RegistryException
      */
     public static void updateAPISwaggerDocs(String apiDocJson, String[] docResourcePaths,
-                                            Registry registry) throws ParseException, RegistryException {
+                                            Registry registry) throws APIMigrationException, RegistryException, ParseException {
 
         JSONParser parser = new JSONParser();
         JSONObject apiDoc11 = (JSONObject) parser.parse(apiDocJson);
@@ -555,13 +556,14 @@ public class ResourceUtil {
 
     /**
      * This method picks the query according to the users database
+     *
      * @param migrateVersion migrate version
      * @return exact query to execute
      * @throws SQLException
      * @throws APIManagementException
      * @throws IOException
      */
-    public static String pickQueryFromResources(String migrateVersion) throws SQLException, APIManagementException, IOException {
+    public static String pickQueryFromResources(String migrateVersion) throws SQLException, APIMigrationException, IOException {
         String databaseType = getDatabaseDriverName();
         String queryTobeExecuted = null;
         String resourcePath;
@@ -577,11 +579,11 @@ public class ResourceUtil {
             //pick from 16to17Migration/sql-scripts
             resourcePath = "/16to17Migration/sql-scripts/";
         } else {
-            throw new APIManagementException("No query picked up for the given migrate version. Please check the migrate version.");
+            throw new APIMigrationException("No query picked up for the given migrate version. Please check the migrate version.");
         }
 
         if (!resourcePath.equals("")) {
-            InputStream inputStream;
+            InputStream inputStream = null;
             try {
                 if (databaseType.equalsIgnoreCase("MYSQL")) {
                     inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "mysql.sql");
@@ -599,6 +601,11 @@ public class ResourceUtil {
 
             } catch (IOException e) {
                 throw new IOException("Error occurred while accessing the sql from resources. " + e);
+            } finally {
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+
             }
         }
         return queryTobeExecuted;
@@ -610,9 +617,9 @@ public class ResourceUtil {
      * @param msg error message
      * @throws APIManagementException
      */
-    public static void handleException(String msg) throws APIManagementException {
+    public static void handleException(String msg) throws APIMigrationException {
         log.error(msg);
-        throw new APIManagementException(msg);
+        throw new APIMigrationException(msg);
     }
 
     /**
@@ -622,7 +629,7 @@ public class ResourceUtil {
      * @param sequenceName              sequence name
      * @throws APIManagementException
      */
-    public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath, String sequenceName) throws APIManagementException {
+    public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath, String sequenceName) throws APIMigrationException {
         try {
             String namespace = "http://ws.apache.org/ns/synapse";
             String filePath = sequenceDirectoryFilePath + sequenceName + ".xml";
@@ -661,7 +668,7 @@ public class ResourceUtil {
      * @param implementation new impl
      * @throws APIManagementException
      */
-    public static void updateSynapseAPI(File filePath, String implementation) throws APIManagementException {
+    public static void updateSynapseAPI(File filePath, String implementation) throws APIMigrationException {
         try {
             DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
             docFactory.setNamespaceAware(true);
