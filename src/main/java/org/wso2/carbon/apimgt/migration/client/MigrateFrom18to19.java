@@ -72,6 +72,13 @@ public class MigrateFrom18to19 implements MigrationClient {
         tenantsArray.add(superTenant);
     }
 
+    /**
+     * This method will migrate database
+     *
+     * @param migrateVersion version to be migrated
+     * @throws APIManagementException
+     * @throws SQLException
+     */
     @Override
     public void databaseMigration(String migrateVersion) throws APIManagementException, SQLException {
         log.info("Database migration for API Manager 1.8.0 started");
@@ -80,7 +87,7 @@ public class MigrateFrom18to19 implements MigrationClient {
         try {
             String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion).trim();
 
-            String queryArray[] = queryToExecute.split("\\n");
+            String queryArray[] = queryToExecute.split("\\n");//Best way to handle?
 
             connection = APIMgtDBUtil.getConnection();
             connection.setAutoCommit(false);
@@ -108,18 +115,33 @@ public class MigrateFrom18to19 implements MigrationClient {
         log.info("DB resource migration done for all the tenants");
     }
 
+    /**
+     * Registry resource Migrations
+     *
+     * @throws APIManagementException
+     */
     @Override
     public void registryResourceMigration() throws APIManagementException {
         swaggerResourceMigration();
         rxtMigration();
     }
 
+    /**
+     * File System Migrations
+     *
+     * @throws APIManagementException
+     */
     @Override
     public void fileSystemMigration() throws APIManagementException {
         synapseAPIMigration();
         sequenceMigration();
     }
 
+    /**
+     * Swagger Resource Migrations
+     *
+     * @throws APIManagementException
+     */
     void swaggerResourceMigration() throws APIManagementException {
         log.info("Swagger migration for API Manager 1.9.0 started");
         try {
@@ -207,6 +229,11 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
 
+    /**
+     * RXT Migrations
+     *
+     * @throws APIManagementException
+     */
     void rxtMigration() throws APIManagementException {
         try {
             for (Tenant tenant : tenantsArray) {
@@ -237,6 +264,11 @@ public class MigrateFrom18to19 implements MigrationClient {
         }
     }
 
+    /**
+     * To clean old registry resources
+     *
+     * @throws APIManagementException
+     */
     @Override
     public void cleanOldResources() throws APIManagementException {
         try {
