@@ -107,9 +107,9 @@ public class MigrateFrom16to17 implements MigrationClient {
             }
             connection.close();
         } catch (SQLException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException("SQL Exception occurred while executing the query", e);
         } catch (IOException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException("IO Exception occurred while searching the sql script file", e);
         }
         log.info("DB resource migration done for all the tenants");
     }
@@ -151,15 +151,15 @@ public class MigrateFrom16to17 implements MigrationClient {
                 }
             }
         } catch (IOException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException("IO Exception occurred while searching the synapse file", e);
         } catch (ParserConfigurationException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException(e.getMessage(), e);
         } catch (SAXException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException(e.getMessage(), e);
         } catch (TransformerException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException(e.getMessage(), e);
         } catch (XPathExpressionException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException(e.getMessage(), e);
         }
 
     }
@@ -321,12 +321,12 @@ public class MigrateFrom16to17 implements MigrationClient {
                     updateSwagger12ResourcesUsingSwagger11Doc(apiIdentifier, registry);
                 }
             }
-        } catch (RegistryException e) {
-            ResourceUtil.handleException(e.getMessage());
-        } catch (UserStoreException e) {
-            ResourceUtil.handleException(e.getMessage());
         } catch (APIManagementException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException("API Management Exception occurred while migrating rxt.", e);
+        } catch (UserStoreException e) {
+            ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
+        } catch (RegistryException e) {
+            ResourceUtil.handleException("Error occurred while accessing the registry.", e);
         } finally {
             PrivilegedCarbonContext.endTenantFlow();
         }
@@ -538,14 +538,12 @@ public class MigrateFrom16to17 implements MigrationClient {
                     }
                 }
             }
-        } catch (UserStoreException e) {
-            ResourceUtil.handleException(e.getMessage());
-        } catch (GovernanceException e) {
-            ResourceUtil.handleException(e.getMessage());
-        } catch (RegistryException e) {
-            ResourceUtil.handleException(e.getMessage());
         } catch (APIManagementException e) {
-            ResourceUtil.handleException(e.getMessage());
+            ResourceUtil.handleException("API Management Exception occurred while migrating rxt.", e);
+        } catch (UserStoreException e) {
+            ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
+        } catch (RegistryException e) {
+            ResourceUtil.handleException("Error occurred while accessing the registry.", e);
         }
     }
 

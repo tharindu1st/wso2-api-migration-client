@@ -40,6 +40,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -615,11 +616,11 @@ public class ResourceUtil {
      * To handle exceptions
      *
      * @param msg error message
-     * @throws APIManagementException
+     * @throws APIMigrationException
      */
-    public static void handleException(String msg) throws APIMigrationException {
-        log.error(msg);
-        throw new APIMigrationException(msg);
+    public static void handleException(String msg, Throwable e) throws APIMigrationException {
+        log.error(msg, e);
+        throw new APIMigrationException(msg, e);
     }
 
     /**
@@ -627,7 +628,7 @@ public class ResourceUtil {
      *
      * @param sequenceDirectoryFilePath sequence directory
      * @param sequenceName              sequence name
-     * @throws APIManagementException
+     * @throws APIMigrationException
      */
     public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath, String sequenceName) throws APIMigrationException {
         try {
@@ -650,14 +651,16 @@ public class ResourceUtil {
             DOMSource source = new DOMSource(doc);
             StreamResult result = new StreamResult(new File(filePath));
             transformer.transform(source, result);
-        } catch (ParserConfigurationException pce) {
-            handleException(pce.getMessage());
-        } catch (TransformerException tfe) {
-            handleException(tfe.getMessage());
-        } catch (IOException ioe) {
-            handleException(ioe.getMessage());
-        } catch (SAXException sae) {
-            handleException(sae.getMessage());
+        } catch (ParserConfigurationException e) {
+            handleException("Could not initiate Document Builder.", e);
+        } catch (TransformerConfigurationException e) {
+            handleException("Could not initiate TransformerFactory Builder.", e);
+        } catch (TransformerException e) {
+            handleException("Could not transform the source.", e);
+        } catch (SAXException e) {
+            handleException("SAX exception occurred while parsing the file.", e);
+        } catch (IOException e) {
+            handleException("IO Exception occurred. Please check the file.", e);
         }
     }
 
@@ -666,7 +669,7 @@ public class ResourceUtil {
      *
      * @param filePath       file path
      * @param implementation new impl
-     * @throws APIManagementException
+     * @throws APIMigrationException
      */
     public static void updateSynapseAPI(File filePath, String implementation) throws APIMigrationException {
         try {
@@ -701,14 +704,16 @@ public class ResourceUtil {
             DOMSource source = new DOMSource(doc);
             StreamResult result = new StreamResult(filePath);
             transformer.transform(source, result);
-        } catch (ParserConfigurationException pce) {
-            handleException(pce.getMessage());
-        } catch (TransformerException tfe) {
-            handleException(tfe.getMessage());
-        } catch (IOException ioe) {
-            handleException(ioe.getMessage());
-        } catch (SAXException sae) {
-            handleException(sae.getMessage());
+        } catch (ParserConfigurationException e) {
+            handleException("Could not initiate Document Builder.", e);
+        } catch (TransformerConfigurationException e) {
+            handleException("Could not initiate TransformerFactory Builder.", e);
+        } catch (TransformerException e) {
+            handleException("Could not transform the source.", e);
+        } catch (SAXException e) {
+            handleException("SAX exception occurred while parsing the file.", e);
+        } catch (IOException e) {
+            handleException("IO Exception occurred. Please check the file.", e);
         }
     }
 }
