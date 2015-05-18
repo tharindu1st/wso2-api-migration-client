@@ -62,10 +62,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@SuppressWarnings("unchecked")
+
 /**
- * Class comment
+ * This class contains all the methods which is used to migrate APIs from APIManager 1.8.0 to APIManager 1.9.0.
+ * The migration performs in database, registry and file system
  */
+
+@SuppressWarnings("unchecked")
 public class MigrateFrom18to19 implements MigrationClient {
 
     private static final Log log = LogFactory.getLog(MigrateFrom18to19.class);
@@ -81,7 +84,8 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
     /**
-     * This method will migrate database
+     * This method is used to migrate database tables
+     * This executes the database queries according to the user's db type and alters the tables
      *
      * @param migrateVersion version to be migrated
      * @throws APIMigrationException
@@ -111,10 +115,8 @@ public class MigrateFrom18to19 implements MigrationClient {
                 log.debug("Query " + queryToExecute + " executed ");
             }
 
-        } catch (SQLException e) {
-            ResourceUtil.handleException("SQL Exception occurred while executing the query", e);
         } catch (IOException e) {
-            ResourceUtil.handleException("IO Exception occurred while searching the sql scrip file", e);
+            ResourceUtil.handleException("Error occurred while finding the query. Please check the file path.", e);
         } finally {
             if (connection != null) {
                 connection.close();
@@ -124,7 +126,8 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
     /**
-     * Registry resource Migrations
+     * This method is used to migrate all registry resources
+     * This migrates swagger resources and rxts
      *
      * @throws APIMigrationException
      */
@@ -135,7 +138,8 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
     /**
-     * File System Migrations
+     * This method is used to migrate all the file system components
+     * such as sequences and synapse files
      *
      * @throws APIMigrationException
      */
@@ -146,16 +150,18 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
     /**
-     * Swagger Resource Migrations
+     * This method is used to migrate swagger v1.2 resources to swagger v2.0 resource
+     * This reads the swagger v1.2 doc from the registry and creates swagger v2.0 doc
      *
      * @throws APIMigrationException
      */
     void swaggerResourceMigration() throws APIMigrationException {
-        log.info("Swagger migration for API Manager 1.9.0 started");
+        log.info("Swagger migration for API Manager 1.9.0 started.");
         try {
-
             for (Tenant tenant : tenantsArray) {
-                log.info("Swagger migration for tenant " + tenant.getDomain() + "[" + tenant.getId() + "]" + " ");
+                if (log.isDebugEnabled()) {
+                    log.debug("Swagger migration for tenant " + tenant.getDomain() + "[" + tenant.getId() + "]" + " ");
+                }
 
                 PrivilegedCarbonContext.startTenantFlow();
                 PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
@@ -164,36 +170,38 @@ public class MigrateFrom18to19 implements MigrationClient {
                 String adminName = ServiceHolder.getRealmService().getTenantUserRealm(
                         tenant.getId()).getRealmConfiguration().getAdminUserName();
                 ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
-                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant.getId());
+                Registry registry = ServiceHolder.getRegistryService().
+                        getGovernanceUserRegistry(adminName, tenant.getId());
                 GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
                 GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
                 GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
 
                 for (GenericArtifact artifact : artifacts) {
-                    API api;
-
-                    api = APIUtil.getAPI(artifact, registry);
-
+                    API api = APIUtil.getAPI(artifact, registry);
                     APIIdentifier apiIdentifier = api.getId();
                     String apiName = apiIdentifier.getApiName();
                     String apiVersion = apiIdentifier.getVersion();
                     String apiProviderName = apiIdentifier.getProviderName();
 
-                    String swagger12location = ResourceUtil.getSwagger12ResourceLocation(apiName, apiVersion, apiProviderName);
+                    String swagger12location = ResourceUtil.getSwagger12ResourceLocation(apiName,
+                            apiVersion, apiProviderName);
 
                     if (!registry.resourceExists(swagger12location)) {
                         log.error("Swagger Resource migration has not happen yet for " +
                                 apiName + "-" + apiVersion + "-"
-                                + apiProviderName +
-                                ". Please run -D" + Constants.VERSION_1_7 + " first");
+                                + apiProviderName);
 
                     } else {
-                        log.info("Creating swagger v2.0 resource for : " + apiName + "-" + apiVersion + "-" + apiProviderName);
+                        if (log.isDebugEnabled()) {
+                            log.debug("Creating swagger v2.0 resource for : " + apiName + "-" + apiVersion + "-"
+                                    + apiProviderName);
+                        }
                         //get swagger v2 doc
                         String swagger2doc = getSwagger2docUsingSwagger12RegistryResources(registry, swagger12location);
 
                         //create location in registry and add this
-                        String swagger2location = ResourceUtil.getSwagger2ResourceLocation(apiName, apiVersion, apiProviderName);
+                        String swagger2location = ResourceUtil.getSwagger2ResourceLocation(apiName, apiVersion,
+                                apiProviderName);
 
                         Resource docContent = registry.newResource();
                         docContent.setContent(swagger2doc);
@@ -201,38 +209,42 @@ public class MigrateFrom18to19 implements MigrationClient {
                         registry.put(swagger2location, docContent);
 
                         //Currently set to ANONYMOUS_ROLE, need to set to visible roles
-                        ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId()).getAuthorizationManager().authorizeRole(APIConstants.ANONYMOUS_ROLE,
-                                "_system/governance" + swagger2location, ActionConstants.GET);
-
-                        log.info("Created swagger v2.0 resource for : " + apiName + "-" + apiVersion + "-" + apiProviderName);
+                        ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId()).getAuthorizationManager()
+                                .authorizeRole(APIConstants.ANONYMOUS_ROLE,
+                                        "_system/governance" + swagger2location, ActionConstants.GET);
                     }
                 }
             }
         } catch (MalformedURLException e) {
-            ResourceUtil.handleException("Malformed URL Exception occurred while migrating swagger v2.0 document", e);
+            ResourceUtil.handleException("Error occurred while creating swagger v2.0 document ", e);
         } catch (APIManagementException e) {
-            ResourceUtil.handleException("APIManagement Exception  occurred while migrating swagger v2.0 document", e);
+            ResourceUtil.handleException("Error occurred while reading API from the artifact ", e);
         } catch (RegistryException e) {
-            ResourceUtil.handleException("Registry Exception  occurred while migrating swagger v2.0 document", e);
+            ResourceUtil.handleException("Error occurred while accessing the registry", e);
         } catch (ParseException e) {
-            ResourceUtil.handleException("Parse Exception occurred while migrating swagger v2.0 document", e);
+            ResourceUtil.handleException("Error occurred while getting swagger v2.0 document", e);
         } catch (UserStoreException e) {
-            ResourceUtil.handleException("User Store Exception occurred while migrating swagger v2.0 document", e);
+            ResourceUtil.handleException("Error occurred while reading tenant information", e);
         } finally {
             PrivilegedCarbonContext.endTenantFlow();
         }
 
-        log.debug("Swagger resource migration done for all the tenants");
+        if (log.isDebugEnabled()) {
+            log.debug("Swagger resource migration done for all the tenants");
+        }
+
     }
 
 
     /**
-     * RXT Migrations
+     * This method is used to migrate rxt
+     * This adds three new attributes to the api rxt
      *
      * @throws APIMigrationException
      */
     //@todo : change the default api.rxt as well
     void rxtMigration() throws APIMigrationException {
+        log.info("Rxt migration for API Manager 1.9.0 started.");
         try {
             for (Tenant tenant : tenantsArray) {
                 String adminName = ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId())
@@ -254,25 +266,28 @@ public class MigrateFrom18to19 implements MigrationClient {
                 }
             }
         } catch (APIManagementException e) {
-            ResourceUtil.handleException("API Management Exception occurred while migrating rxt.", e);
-        } catch (UserStoreException e) {
-            ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
+            ResourceUtil.handleException("Error occurred while reading API from the artifact ", e);
         } catch (RegistryException e) {
-            ResourceUtil.handleException("Error occurred while accessing the registry.", e);
+            ResourceUtil.handleException("Error occurred while accessing the registry", e);
+        } catch (UserStoreException e) {
+            ResourceUtil.handleException("Error occurred while reading tenant information", e);
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("Rxt resource migration done for all the tenants");
         }
     }
 
     /**
-     * To clean old registry resources
+     * This method is used to clean old registry resources.
+     * This deletes the old swagger v1.2 resource from the registry
      *
      * @throws APIMigrationException
      */
     @Override
     public void cleanOldResources() throws APIMigrationException {
+        log.info("Resource cleanup started for API Manager 1.9.0");
         try {
             for (Tenant tenant : tenantsArray) {
-                log.info("Swagger migration for tenant " + tenant.getDomain() + "[" + tenant.getId() + "]" + " ");
-
                 PrivilegedCarbonContext.startTenantFlow();
                 PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
                 PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenant.getId());
@@ -280,7 +295,8 @@ public class MigrateFrom18to19 implements MigrationClient {
                 String adminName = ServiceHolder.getRealmService().getTenantUserRealm(
                         tenant.getId()).getRealmConfiguration().getAdminUserName();
                 ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
-                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant.getId());
+                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName,
+                        tenant.getId());
                 GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
                 GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
                 GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
@@ -295,7 +311,8 @@ public class MigrateFrom18to19 implements MigrationClient {
                     String apiVersion = apiIdentifier.getVersion();
                     String apiProviderName = apiIdentifier.getProviderName();
 
-                    String swagger12location = ResourceUtil.getSwagger12ResourceLocation(apiName, apiVersion, apiProviderName);
+                    String swagger12location = ResourceUtil.getSwagger12ResourceLocation(apiName, apiVersion,
+                            apiProviderName);
 
                     if (registry.resourceExists(swagger12location)) {
                         registry.delete(APIConstants.API_DOC_LOCATION);
@@ -311,6 +328,9 @@ public class MigrateFrom18to19 implements MigrationClient {
             ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
         } catch (RegistryException e) {
             ResourceUtil.handleException("Error occurred while accessing the registry.", e);
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("old resources cleaned up.");
         }
     }
 
@@ -372,7 +392,7 @@ public class MigrateFrom18to19 implements MigrationClient {
                     String implementationType = api.getImplementation();
                     String qualifiedName = apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName() + ":v" +
                             apiIdentifier.getVersion();
-                    //String qualifiedDefaultApiName = apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName();
+                    //String qualifiedDefaultApiName = apiIdentifier.getProviderName() + "-" + apiIdentifier.getApiName();
                     File synapseFile = null;
                     if (synapseFiles != null) {
                         for (File file : synapseFiles) {
@@ -401,7 +421,7 @@ public class MigrateFrom18to19 implements MigrationClient {
 
 
     /**
-     * Generates swagger v2 doc using swagger 1.2 doc
+     * This method generates swagger v2 doc using swagger 1.2 doc
      *
      * @param registry          governance registry
      * @param swagger12location the location of swagger 1.2 doc
@@ -445,7 +465,7 @@ public class MigrateFrom18to19 implements MigrationClient {
                 JSONObject api = (JSONObject) anApiArray;
                 String path = (String) api.get("path");
                 JSONArray operations = (JSONArray) api.get("operations");
-                //set the operations object inside each api definitions resource and set it in a map against its resource path
+                //set the operations object inside each api definition and set it in a map against its resource path
                 apiDefPaths.put(path, operations);
             }
         }
@@ -636,10 +656,12 @@ public class MigrateFrom18to19 implements MigrationClient {
                 }
 
 
-                //set pathItem object for the resource(https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#pathItemObject)
+                //set pathItem object for the resource
+                //(https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#pathItemObject)
                 pathItemObj.put(method.toLowerCase(), swagger2OperationsObj);
 
-                //set the responseObject (https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#responsesObject)
+                //set the responseObject
+                //(https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md#responsesObject)
                 JSONObject responseObject = null;
                 if (operationObject.containsKey("responseMessages")) {
                     responseObject = new JSONObject();

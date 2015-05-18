@@ -55,7 +55,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@SuppressWarnings("unchecked , unused")
 public class ResourceUtil {
 
     private static final Log log = LogFactory.getLog(ResourceUtil.class);
