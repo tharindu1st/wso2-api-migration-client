@@ -47,7 +47,9 @@ import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.tenant.TenantManager;
 import org.wso2.carbon.utils.CarbonUtils;
+import org.wso2.carbon.utils.dbcreator.DatabaseCreator;
 
+import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -98,10 +100,10 @@ public class MigrateFrom18to19 implements MigrationClient {
         PreparedStatement preparedStatement = null;
         try {
             String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion).trim();
+            connection = APIMgtDBUtil.getConnection();
 
             String queryArray[] = queryToExecute.split(Constants.LINE_BREAK);//use local db creator
 
-            connection = APIMgtDBUtil.getConnection();
             connection.setAutoCommit(false);
 
             for (String query : queryArray) {

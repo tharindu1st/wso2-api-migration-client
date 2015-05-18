@@ -25,6 +25,7 @@ import org.w3c.dom.NodeList;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.migration.APIMigrationException;
+import org.wso2.carbon.apimgt.migration.client.MigrationDBCreator;
 import org.wso2.carbon.registry.core.RegistryConstants;
 import org.xml.sax.SAXException;
 
@@ -112,28 +113,31 @@ public class ResourceUtil {
      */
     public static String pickQueryFromResources(String migrateVersion) throws SQLException, APIMigrationException,
             IOException {
-        String databaseType = getDatabaseDriverName();
+
         String queryTobeExecuted = null;
-        String resourcePath;
+        InputStream inputStream = null;
+        try {
+            String databaseType = MigrationDBCreator.getDatabaseType(APIMgtDBUtil.getConnection());
 
-        if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
-            //pick from 18to19Migration/sql-scripts
-            resourcePath = "/18to19Migration/sql-scripts/";
+            String resourcePath;
 
-        } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
-            //pick from 17to18Migration/sql-scripts
-            resourcePath = "/17to18Migration/sql-scripts/";
-        } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
-            //pick from 16to17Migration/sql-scripts
-            resourcePath = "/16to17Migration/sql-scripts/";
-        } else {
-            throw new APIMigrationException("No query picked up for the given migrate version. Please check the migrate version.");
-        }
+            if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
+                //pick from 18to19Migration/sql-scripts
+                resourcePath = "/18to19Migration/sql-scripts/";
 
-        if (!resourcePath.equals("")) {
-            InputStream inputStream = null;
-            try {
-                if (databaseType.equalsIgnoreCase("MYSQL")) {
+            } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
+                //pick from 17to18Migration/sql-scripts
+                resourcePath = "/17to18Migration/sql-scripts/";
+            } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
+                //pick from 16to17Migration/sql-scripts
+                resourcePath = "/16to17Migration/sql-scripts/";
+            } else {
+                throw new APIMigrationException("No query picked up for the given migrate version. Please check the migrate version.");
+            }
+
+
+            inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + databaseType + ".sql");
+                /*if (databaseType.equalsIgnoreCase("MYSQL")) {
                     inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "mysql.sql");
                 } else if (databaseType.equalsIgnoreCase("MSSQL")) {
                     inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "mssql.sql");
@@ -143,19 +147,24 @@ public class ResourceUtil {
                     inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "oracle.sql");
                 } else {
                     inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "postgresql.sql");
-                }
-
+                }*/
+            if (inputStream != null) {
                 queryTobeExecuted = IOUtils.toString(inputStream);
-
-            } catch (IOException e) {
-                throw new APIMigrationException("Error occurred while accessing the sql from resources. " + e);
-            } finally {
-                if (inputStream != null) {
-                    inputStream.close();
-                }
-
+            } else {
+                log.error("Cannot find a query to execute in the database type " + databaseType);
             }
+
+        } catch (IOException e) {
+            throw new APIMigrationException("Error occurred while accessing the sql from resources. " + e);
+        } catch (Exception e) {
+            throw new APIMigrationException("Error occurred while accessing the sql from resources. " + e);
+        } finally {
+            if (inputStream != null) {
+                inputStream.close();
+            }
+
         }
+
         return queryTobeExecuted;
     }
 
