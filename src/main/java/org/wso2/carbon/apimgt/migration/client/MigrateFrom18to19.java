@@ -99,7 +99,7 @@ public class MigrateFrom18to19 implements MigrationClient {
         try {
             String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion).trim();
 
-            String queryArray[] = queryToExecute.split("\\n");//use local db creator
+            String queryArray[] = queryToExecute.split(Constants.LINE_BREAK);//use local db creator
 
             connection = APIMgtDBUtil.getConnection();
             connection.setAutoCommit(false);
@@ -116,7 +116,8 @@ public class MigrateFrom18to19 implements MigrationClient {
             }
 
         } catch (IOException e) {
-            ResourceUtil.handleException("Error occurred while finding the query. Please check the file path.", e);
+            //ResourceUtil.handleException("Error occurred while finding the query. Please check the file path.", e);
+            log.error("Error occurred while migrating databases", e);
         } finally {
             if (connection != null) {
                 connection.close();
