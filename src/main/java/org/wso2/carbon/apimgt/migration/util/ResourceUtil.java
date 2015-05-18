@@ -225,6 +225,7 @@ public class ResourceUtil {
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             Document doc = null;
             doc = docBuilder.parse(filePath.getAbsolutePath());
+            //@todo : Tharindu please check this (sequence is neve used)
             Node sequence = doc.getFirstChild();
             //     <handler class="org.wso2.carbon.apimgt.gateway.handlers.security.CORSRequestHandler">
             //   <property name="inline" value="endpoint"/>
