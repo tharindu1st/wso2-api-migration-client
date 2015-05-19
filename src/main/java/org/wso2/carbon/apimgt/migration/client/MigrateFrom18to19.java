@@ -674,57 +674,29 @@ public class MigrateFrom18to19 implements MigrationClient {
         String repository = CarbonUtils.getCarbonRepository();
         String tenantRepository = CarbonUtils.getCarbonTenantsDirPath();
         for (Tenant tenant : tenantsArray) {
-            try {
-                String SequenceFilePath;
-                if (tenant.getId() != MultitenantConstants.SUPER_TENANT_ID) {
-                    SequenceFilePath = tenantRepository + "/" + tenant.getId() +
-                            "/synapse-configs/default/api";
-                } else {
-                    SequenceFilePath = repository + "synapse-configs/default/api";
-                }
-                File APIFiles = new File(SequenceFilePath);
-                File[] synapseFiles = APIFiles.listFiles();
-                PrivilegedCarbonContext.startTenantFlow();
-                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
-                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenant.getId());
-                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(
-                        tenant.getId()).getRealmConfiguration().getAdminUserName();
-                ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
-                Registry registry =
-                        ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant.getId());
-                GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
-                GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
-                GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
-                for (GenericArtifact artifact : artifacts) {
-                    API api = APIUtil.getAPI(artifact, registry);
-                    APIIdentifier apiIdentifier = api.getId();
-                    String implementationType = api.getImplementation();
-                    String qualifiedName = apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName() + ":v" +
-                            apiIdentifier.getVersion();
-                    //String qualifiedDefaultApiName = apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName();
-                    File synapseFile = null;
-                    if (synapseFiles != null) {
-                        for (File file : synapseFiles) {
-                            if ((qualifiedName + ".xml").equals(file.getName())) {
-                                synapseFile = file;
-                                break;
-                            }
-                        }
+
+            String SequenceFilePath;
+            if (tenant.getId() != MultitenantConstants.SUPER_TENANT_ID) {
+                SequenceFilePath = tenantRepository + "/" + tenant.getId() +
+                                   "/synapse-configs/default/api";
+            } else {
+                SequenceFilePath = repository + "synapse-configs/default/api";
+            }
+            File APIFiles = new File(SequenceFilePath);
+            File[] synapseFiles = APIFiles.listFiles();
+            for (File synapseFile : synapseFiles){
+                if (tenant.getId() ==  MultitenantConstants.SUPER_TENANT_ID){
+                    if (synapseFile.getName().matches("[\\w+][--][\\w+][__v]")){
+                    ResourceUtil.updateSynapseAPI(synapseFile,"ENDPOINT");
                     }
-                    if (synapseFile != null) {
-                        ResourceUtil.updateSynapseAPI(synapseFile, implementationType);
+                }else{
+                    if (synapseFile.getName().matches("[\\w+][-AT-]"+tenant.getDomain()+"[--][\\w+]")){
+                        ResourceUtil.updateSynapseAPI(synapseFile,"ENDPOINT");
                     }
                 }
 
-            } catch (APIManagementException e) {
-                ResourceUtil.handleException("API Management Exception occurred while migrating rxt.", e);
-            } catch (UserStoreException e) {
-                ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
-            } catch (RegistryException e) {
-                ResourceUtil.handleException("Error occurred while accessing the registry.", e);
-            } finally {
-                PrivilegedCarbonContext.endTenantFlow();
             }
+
         }
     }
 }
