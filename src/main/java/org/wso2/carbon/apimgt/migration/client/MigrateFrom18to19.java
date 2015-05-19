@@ -47,14 +47,14 @@ import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.tenant.TenantManager;
 import org.wso2.carbon.utils.CarbonUtils;
+import org.wso2.carbon.utils.dbcreator.DatabaseCreator;
 
+import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -97,11 +97,11 @@ public class MigrateFrom18to19 implements MigrationClient {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
         try {
-            String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion).trim();
-
-            String queryArray[] = queryToExecute.split("\\n");//use local db creator
-
+            String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion, Constants.ALTER).trim();
             connection = APIMgtDBUtil.getConnection();
+
+            String queryArray[] = queryToExecute.split(Constants.LINE_BREAK);
+
             connection.setAutoCommit(false);
 
             for (String query : queryArray) {
@@ -111,18 +111,49 @@ public class MigrateFrom18to19 implements MigrationClient {
                 preparedStatement.close();
             }
 
+            String dbType = MigrationDBCreator.getDatabaseType(connection);
+            dropFKConstraint(migrateVersion, dbType);
+
             if (log.isDebugEnabled()) {
                 log.debug("Query " + queryToExecute + " executed ");
             }
 
         } catch (IOException e) {
-            ResourceUtil.handleException("Error occurred while finding the query. Please check the file path.", e);
+            //ResourceUtil.handleException("Error occurred while finding the query. Please check the file path.", e);
+            log.error("Error occurred while migrating databases", e);
+        } catch (Exception e) {
+            //ResourceUtil.handleException("Error occurred while finding the query. Please check the file path.", e);
+            log.error("Error occurred while migrating databases", e);
         } finally {
             if (connection != null) {
                 connection.close();
             }
         }
         log.info("DB resource migration done for all the tenants");
+    }
+
+    private void dropFKConstraint(String migrateVersion, String dbType) throws SQLException, IOException, APIMigrationException {
+        String constraintName = null;
+        Connection connection;
+        String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion, Constants.CONSTRAINT).trim();
+        String queryArray[] = queryToExecute.split(Constants.LINE_BREAK);
+
+        connection = APIMgtDBUtil.getConnection();
+        connection.setAutoCommit(false);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(queryArray[0]);
+        while (resultSet.next()) {
+            constraintName = resultSet.getString("constraint_name");
+        }
+
+        if (constraintName != null) {
+            queryToExecute = queryArray[1].replace("<temp_key_name>", constraintName);
+            PreparedStatement preparedStatement = connection.prepareStatement(queryToExecute);
+            preparedStatement.execute();
+            connection.commit();
+            preparedStatement.close();
+        }
+        connection.close();
     }
 
     /**
@@ -234,191 +265,6 @@ public class MigrateFrom18to19 implements MigrationClient {
         }
 
     }
-
-
-    /**
-     * This method is used to migrate rxt
-     * This adds three new attributes to the api rxt
-     *
-     * @throws APIMigrationException
-     */
-    //@todo : change the default api.rxt as well
-    void rxtMigration() throws APIMigrationException {
-        log.info("Rxt migration for API Manager 1.9.0 started.");
-        try {
-            for (Tenant tenant : tenantsArray) {
-                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId())
-                        .getRealmConfiguration().getAdminUserName();
-                ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
-                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant
-                        .getId());
-                GenericArtifactManager artifactManager = APIUtil.getArtifactManager(registry, APIConstants.API_KEY);
-                GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
-                GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
-                GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
-                for (GenericArtifact artifact : artifacts) {
-                    API api = APIUtil.getAPI(artifact, registry);
-                    artifact.addAttribute("overview_contextTemplate", api.getContext() + "/{version}");
-                    artifact.addAttribute("overview_environments", "");
-                    artifact.addAttribute("overview_versionType", "");
-
-                    artifactManager.updateGenericArtifact(artifact);
-                }
-            }
-        } catch (APIManagementException e) {
-            ResourceUtil.handleException("Error occurred while reading API from the artifact ", e);
-        } catch (RegistryException e) {
-            ResourceUtil.handleException("Error occurred while accessing the registry", e);
-        } catch (UserStoreException e) {
-            ResourceUtil.handleException("Error occurred while reading tenant information", e);
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("Rxt resource migration done for all the tenants");
-        }
-    }
-
-    /**
-     * This method is used to clean old registry resources.
-     * This deletes the old swagger v1.2 resource from the registry
-     *
-     * @throws APIMigrationException
-     */
-    @Override
-    public void cleanOldResources() throws APIMigrationException {
-        log.info("Resource cleanup started for API Manager 1.9.0");
-        try {
-            for (Tenant tenant : tenantsArray) {
-                PrivilegedCarbonContext.startTenantFlow();
-                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
-                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenant.getId());
-
-                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(
-                        tenant.getId()).getRealmConfiguration().getAdminUserName();
-                ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
-                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName,
-                        tenant.getId());
-                GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
-                GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
-                GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
-
-                for (GenericArtifact artifact : artifacts) {
-                    API api;
-
-                    api = APIUtil.getAPI(artifact, registry);
-
-                    APIIdentifier apiIdentifier = api.getId();
-                    String apiName = apiIdentifier.getApiName();
-                    String apiVersion = apiIdentifier.getVersion();
-                    String apiProviderName = apiIdentifier.getProviderName();
-
-                    String swagger12location = ResourceUtil.getSwagger12ResourceLocation(apiName, apiVersion,
-                            apiProviderName);
-
-                    if (registry.resourceExists(swagger12location)) {
-                        registry.delete(APIConstants.API_DOC_LOCATION);
-                        log.info("Resource deleted from the registry.");
-
-                    }
-
-                }
-            }
-        } catch (APIManagementException e) {
-            ResourceUtil.handleException("API Management Exception occurred while migrating rxt.", e);
-        } catch (UserStoreException e) {
-            ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
-        } catch (RegistryException e) {
-            ResourceUtil.handleException("Error occurred while accessing the registry.", e);
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("old resources cleaned up.");
-        }
-    }
-
-    void sequenceMigration() throws APIMigrationException {
-        String repository = CarbonUtils.getCarbonRepository();
-        String TenantRepo = CarbonUtils.getCarbonTenantsDirPath();
-        for (Tenant tenant : tenantsArray) {
-            String SequenceFilePath;
-            if (tenant.getId() != MultitenantConstants.SUPER_TENANT_ID) {
-                SequenceFilePath = TenantRepo + "/" + tenant.getId() +
-                        "/synapse-configs/default/sequences/";
-            } else {
-                SequenceFilePath = repository + "synapse-configs/default/sequences/";
-            }
-            try {
-                FileUtils.copyInputStreamToFile(MigrateFrom18to19.class.getResourceAsStream(
-                                "/18to19Migration/sequence-scripts/_cors_request_handler.xml"),
-                        new File(SequenceFilePath + "_cors_request_handler.xml"));
-                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_auth_failure_handler_");
-                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_throttle_out_handler_");
-                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_token_fault_");
-                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "fault");
-            } catch (IOException e) {
-                ResourceUtil.handleException("Error occurred while reading file to copy.", e);
-            }
-        }
-    }
-
-
-    //@todo : read from fs
-    void synapseAPIMigration() throws APIMigrationException {
-        String repository = CarbonUtils.getCarbonRepository();
-        String tenantRepository = CarbonUtils.getCarbonTenantsDirPath();
-        for (Tenant tenant : tenantsArray) {
-            try {
-                String SequenceFilePath;
-                if (tenant.getId() != MultitenantConstants.SUPER_TENANT_ID) {
-                    SequenceFilePath = tenantRepository + "/" + tenant.getId() +
-                            "/synapse-configs/default/api";
-                } else {
-                    SequenceFilePath = repository + "synapse-configs/default/api";
-                }
-                File APIFiles = new File(SequenceFilePath);
-                File[] synapseFiles = APIFiles.listFiles();
-                PrivilegedCarbonContext.startTenantFlow();
-                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
-                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenant.getId());
-                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(
-                        tenant.getId()).getRealmConfiguration().getAdminUserName();
-                ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
-                Registry registry =
-                        ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant.getId());
-                GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
-                GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
-                GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
-                for (GenericArtifact artifact : artifacts) {
-                    API api = APIUtil.getAPI(artifact, registry);
-                    APIIdentifier apiIdentifier = api.getId();
-                    String implementationType = api.getImplementation();
-                    String qualifiedName = apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName() + ":v" +
-                            apiIdentifier.getVersion();
-                    //String qualifiedDefaultApiName = apiIdentifier.getProviderName() + "-" + apiIdentifier.getApiName();
-                    File synapseFile = null;
-                    if (synapseFiles != null) {
-                        for (File file : synapseFiles) {
-                            if ((qualifiedName + ".xml").equals(file.getName())) {
-                                synapseFile = file;
-                                break;
-                            }
-                        }
-                    }
-                    if (synapseFile != null) {
-                        ResourceUtil.updateSynapseAPI(synapseFile, implementationType);
-                    }
-                }
-
-            } catch (APIManagementException e) {
-                ResourceUtil.handleException("API Management Exception occurred while migrating rxt.", e);
-            } catch (UserStoreException e) {
-                ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
-            } catch (RegistryException e) {
-                ResourceUtil.handleException("Error occurred while accessing the registry.", e);
-            } finally {
-                PrivilegedCarbonContext.endTenantFlow();
-            }
-        }
-    }
-
 
     /**
      * This method generates swagger v2 doc using swagger 1.2 doc
@@ -680,5 +526,205 @@ public class MigrateFrom18to19 implements MigrationClient {
             pathsObj.put(key, pathItemObj);
         }
         return pathsObj;
+    }
+
+
+    /**
+     * This method is used to migrate rxt
+     * This adds three new attributes to the api rxt
+     *
+     * @throws APIMigrationException
+     */
+    //@todo : change the default api.rxt as well
+    void rxtMigration() throws APIMigrationException {
+        log.info("Rxt migration for API Manager 1.9.0 started.");
+        try {
+            for (Tenant tenant : tenantsArray) {
+                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId())
+                        .getRealmConfiguration().getAdminUserName();
+                ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
+                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant
+                        .getId());
+                GenericArtifactManager artifactManager = APIUtil.getArtifactManager(registry, APIConstants.API_KEY);
+                GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
+                GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
+                GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
+                for (GenericArtifact artifact : artifacts) {
+                    API api = APIUtil.getAPI(artifact, registry);
+                    artifact.addAttribute("overview_contextTemplate", api.getContext() + "/{version}");
+                    artifact.addAttribute("overview_environments", "");//@todo : assume published to all environments
+                    artifact.addAttribute("overview_versionType", "");
+
+                    artifactManager.updateGenericArtifact(artifact);
+                }
+            }
+        } catch (APIManagementException e) {
+            ResourceUtil.handleException("Error occurred while reading API from the artifact ", e);
+        } catch (RegistryException e) {
+            ResourceUtil.handleException("Error occurred while accessing the registry", e);
+        } catch (UserStoreException e) {
+            ResourceUtil.handleException("Error occurred while reading tenant information", e);
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("Rxt resource migration done for all the tenants");
+        }
+    }
+
+
+
+
+    /**
+     * This method is used to clean old registry resources.
+     * This deletes the old swagger v1.2 resource from the registry
+     *
+     * @throws APIMigrationException
+     */
+    @Override
+    public void cleanOldResources() throws APIMigrationException {
+        log.info("Resource cleanup started for API Manager 1.9.0");
+        try {
+            for (Tenant tenant : tenantsArray) {
+                PrivilegedCarbonContext.startTenantFlow();
+                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
+                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenant.getId());
+
+                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(
+                        tenant.getId()).getRealmConfiguration().getAdminUserName();
+                ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
+                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName,
+                        tenant.getId());
+                GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
+                GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
+                GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
+
+                for (GenericArtifact artifact : artifacts) {
+                    API api;
+
+                    api = APIUtil.getAPI(artifact, registry);
+
+                    APIIdentifier apiIdentifier = api.getId();
+                    String apiName = apiIdentifier.getApiName();
+                    String apiVersion = apiIdentifier.getVersion();
+                    String apiProviderName = apiIdentifier.getProviderName();
+
+                    String swagger12location = ResourceUtil.getSwagger12ResourceLocation(apiName, apiVersion,
+                            apiProviderName);
+
+                    if (registry.resourceExists(swagger12location)) {
+                        registry.delete(APIConstants.API_DOC_LOCATION);
+                        log.info("Resource deleted from the registry.");
+
+                    }
+
+                }
+            }
+        } catch (APIManagementException e) {
+            ResourceUtil.handleException("API Management Exception occurred while migrating rxt.", e);
+        } catch (UserStoreException e) {
+            ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
+        } catch (RegistryException e) {
+            ResourceUtil.handleException("Error occurred while accessing the registry.", e);
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("old resources cleaned up.");
+        }
+    }
+
+    /**
+     * This method is used to migrate sequence files
+     * This adds cors_request_handler to sequences
+     *
+     * @throws APIMigrationException
+     */
+    void sequenceMigration() throws APIMigrationException {
+        String repository = CarbonUtils.getCarbonRepository();
+        String TenantRepo = CarbonUtils.getCarbonTenantsDirPath();
+        for (Tenant tenant : tenantsArray) {
+            String SequenceFilePath;
+            if (tenant.getId() != MultitenantConstants.SUPER_TENANT_ID) {
+                SequenceFilePath = TenantRepo + "/" + tenant.getId() +
+                        "/synapse-configs/default/sequences/";
+            } else {
+                SequenceFilePath = repository + "synapse-configs/default/sequences/";
+            }
+            try {
+                FileUtils.copyInputStreamToFile(MigrateFrom18to19.class.getResourceAsStream(
+                                "/18to19Migration/sequence-scripts/_cors_request_handler.xml"),
+                        new File(SequenceFilePath + "_cors_request_handler.xml"));
+                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_auth_failure_handler_");
+                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_throttle_out_handler_");
+                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_token_fault_");
+                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "fault");
+            } catch (IOException e) {
+                ResourceUtil.handleException("Error occurred while reading file to copy.", e);
+            }
+        }
+    }
+
+
+    /**
+     * This method is used to migrate synapse files
+     * This changes the synapse api and add the new handlers
+     *
+     * @throws APIMigrationException
+     */
+
+    //@todo : read from fs
+    void synapseAPIMigration() throws APIMigrationException {
+        String repository = CarbonUtils.getCarbonRepository();
+        String tenantRepository = CarbonUtils.getCarbonTenantsDirPath();
+        for (Tenant tenant : tenantsArray) {
+            try {
+                String SequenceFilePath;
+                if (tenant.getId() != MultitenantConstants.SUPER_TENANT_ID) {
+                    SequenceFilePath = tenantRepository + "/" + tenant.getId() +
+                            "/synapse-configs/default/api";
+                } else {
+                    SequenceFilePath = repository + "synapse-configs/default/api";
+                }
+                File APIFiles = new File(SequenceFilePath);
+                File[] synapseFiles = APIFiles.listFiles();
+                PrivilegedCarbonContext.startTenantFlow();
+                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
+                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenant.getId());
+                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(
+                        tenant.getId()).getRealmConfiguration().getAdminUserName();
+                ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
+                Registry registry =
+                        ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant.getId());
+                GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
+                GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
+                GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
+                for (GenericArtifact artifact : artifacts) {
+                    API api = APIUtil.getAPI(artifact, registry);
+                    APIIdentifier apiIdentifier = api.getId();
+                    String implementationType = api.getImplementation();
+                    String qualifiedName = apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName() + ":v" +
+                            apiIdentifier.getVersion();
+                    //String qualifiedDefaultApiName = apiIdentifier.getProviderName() + "--" + apiIdentifier.getApiName();
+                    File synapseFile = null;
+                    if (synapseFiles != null) {
+                        for (File file : synapseFiles) {
+                            if ((qualifiedName + ".xml").equals(file.getName())) {
+                                synapseFile = file;
+                                break;
+                            }
+                        }
+                    }
+                    if (synapseFile != null) {
+                        ResourceUtil.updateSynapseAPI(synapseFile, implementationType);
+                    }
+                }
+
+            } catch (APIManagementException e) {
+                ResourceUtil.handleException("API Management Exception occurred while migrating rxt.", e);
+            } catch (UserStoreException e) {
+                ResourceUtil.handleException("Error occurred while reading tenant admin.", e);
+            } catch (RegistryException e) {
+                ResourceUtil.handleException("Error occurred while accessing the registry.", e);
+            } finally {
+                PrivilegedCarbonContext.endTenantFlow();
+            }
+        }
     }
 }
