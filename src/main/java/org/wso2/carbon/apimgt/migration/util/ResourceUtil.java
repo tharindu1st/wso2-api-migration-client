@@ -202,11 +202,14 @@ public class ResourceUtil {
             Node sequence = doc.getFirstChild();
             Element corsHandler = doc.createElementNS(namespace, "sequence");
             corsHandler.setAttribute("key", "_cors_request_handler");
-            if (!"_token_fault_".equals(sequenceName) || !"fault".equals(sequenceName)) {
-                sequence.appendChild(corsHandler);
-            } else {
-                sequence.insertBefore(corsHandler, doc.getElementsByTagName("send").item(0));
-            }
+           if ("_throttle_out_handler_".equals(sequenceName)){
+               sequence.appendChild(corsHandler);
+           } else if ("_auth_failure_handler_".equals(sequenceName)){
+               sequence.appendChild(corsHandler);
+            }else{
+               sequence.insertBefore(corsHandler, doc.getElementsByTagName("send").item(0));
+           }
+
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             DOMSource source = new DOMSource(doc);
