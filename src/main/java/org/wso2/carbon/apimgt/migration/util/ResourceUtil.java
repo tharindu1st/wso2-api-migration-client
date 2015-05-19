@@ -238,12 +238,6 @@ public class ResourceUtil {
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             Document doc = null;
             doc = docBuilder.parse(filePath.getAbsolutePath());
-            //@todo : Tharindu please check this (sequence is neve used)
-            Node sequence = doc.getFirstChild();
-            //     <handler class="org.wso2.carbon.apimgt.gateway.handlers.security.CORSRequestHandler">
-            //   <property name="inline" value="endpoint"/>
-            // </handler>
-            // <handler class="org.wso2.carbon.apimgt.gateway.handlers.security.APIAuthenticationHandler"/>
             Node handlers = doc.getElementsByTagName("handlers").item(0);
             Element corsHandler = doc.createElement("handler");
             corsHandler.setAttribute("class", "org.wso2.carbon.apimgt.gateway.handlers.security.CORSRequestHandler");
