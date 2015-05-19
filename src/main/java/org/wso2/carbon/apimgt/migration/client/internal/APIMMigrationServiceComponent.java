@@ -127,7 +127,7 @@ public class APIMMigrationServiceComponent {
                         //Only performs file system migration
                         if (isFileSystemMigrationNeeded) {
                             log.info("Migrating WSO2 API Manager 1.8.0 file system resources to WSO2 API Manager 1.9.0");
-                            //migrateFrom18to19.fileSystemMigration();
+                            migrateFrom18to19.fileSystemMigration();
                         }
                     }
                     //Old resource cleanup

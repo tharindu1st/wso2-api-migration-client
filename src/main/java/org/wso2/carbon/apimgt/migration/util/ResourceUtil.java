@@ -27,6 +27,7 @@ import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.migration.APIMigrationException;
 import org.wso2.carbon.apimgt.migration.client.MigrationDBCreator;
 import org.wso2.carbon.registry.core.RegistryConstants;
+import org.wso2.carbon.utils.CarbonUtils;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -39,6 +40,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -136,10 +138,12 @@ public class ResourceUtil {
             }
 
             if(Constants.CONSTRAINT.equals(queryType)) {
-                resourcePath = resourcePath + Constants.CONSTRAINT +"/";
-                inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "query.sql");
+                resourcePath = CarbonUtils.getCarbonHome() + "/repository/components/dropins/";
+                //inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "query.sql");
+                queryTobeExecuted = IOUtils.toString(new FileInputStream(new File(resourcePath + "query.txt")), "UTF-8");
             } else {
                 inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + databaseType + ".sql");
+                queryTobeExecuted = IOUtils.toString(inputStream);
             }
 
                 /*if (databaseType.equalsIgnoreCase("MYSQL")) {
@@ -153,11 +157,6 @@ public class ResourceUtil {
                 } else {
                     inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "postgresql.sql");
                 }*/
-            if (inputStream != null) {
-                queryTobeExecuted = IOUtils.toString(inputStream);
-            } else {
-                log.error("Cannot find a query to execute in the database type " + databaseType);
-            }
 
         } catch (IOException e) {
             throw new APIMigrationException("Error occurred while accessing the sql from resources. " + e);
