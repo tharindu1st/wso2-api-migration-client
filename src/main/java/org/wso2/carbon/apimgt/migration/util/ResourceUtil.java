@@ -111,7 +111,7 @@ public class ResourceUtil {
      * @throws APIMigrationException
      * @throws IOException
      */
-    public static String pickQueryFromResources(String migrateVersion) throws SQLException, APIMigrationException,
+    public static String pickQueryFromResources(String migrateVersion, String queryType) throws SQLException, APIMigrationException,
             IOException {
 
         String queryTobeExecuted = null;
@@ -135,8 +135,13 @@ public class ResourceUtil {
                 throw new APIMigrationException("No query picked up for the given migrate version. Please check the migrate version.");
             }
 
+            if(Constants.CONSTRAINT.equals(queryType)) {
+                resourcePath = resourcePath + Constants.CONSTRAINT +"/";
+                inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "query.sql");
+            } else {
+                inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + databaseType + ".sql");
+            }
 
-            inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + databaseType + ".sql");
                 /*if (databaseType.equalsIgnoreCase("MYSQL")) {
                     inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "mysql.sql");
                 } else if (databaseType.equalsIgnoreCase("MSSQL")) {

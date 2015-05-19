@@ -22,6 +22,8 @@ public class Constants {
     public static final String VERSION_1_8 = "1.8";
     public static final String VERSION_1_9 = "1.9";
     public static final String LINE_BREAK = "\\n";
+    public static final String CONSTRAINT = "constraint";
+    public static final String ALTER = "alter";
 
 
     //constants for swagger v2
