@@ -212,7 +212,8 @@ public class ResourceUtil {
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             DOMSource source = new DOMSource(doc);
-            StreamResult result = new StreamResult(new File(filePath));
+            String outputPath = sequenceDirectoryFilePath + "test_" + sequenceName + ".xml";
+            StreamResult result = new StreamResult(new File(outputPath));
             transformer.transform(source, result);
         } catch (ParserConfigurationException e) {
             handleException("Could not initiate Document Builder.", e);

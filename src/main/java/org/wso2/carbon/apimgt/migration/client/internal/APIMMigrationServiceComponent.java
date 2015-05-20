@@ -112,7 +112,7 @@ public class APIMMigrationServiceComponent {
                         log.info("Migrating WSO2 API Manager 1.8.0 resources to WSO2 API Manager 1.9.0");
                         migrateFrom18to19.databaseMigration(migrateVersion);
                         migrateFrom18to19.registryResourceMigration();
-                        migrateFrom18to19.fileSystemMigration();
+                        //migrateFrom18to19.fileSystemMigration();
                     } else {
                         //Only performs database migration
                         if (isDBMigrationNeeded) {
