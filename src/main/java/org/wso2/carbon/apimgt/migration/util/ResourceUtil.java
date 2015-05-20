@@ -125,38 +125,24 @@ public class ResourceUtil {
 
             if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
                 //pick from 18to19Migration/sql-scripts
-                resourcePath = "/18to19Migration/sql-scripts/";
-
+                resourcePath = CarbonUtils.getCarbonHome() + "dbscripts/migration-1.8.0_to_1.9.0/";
             } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
                 //pick from 17to18Migration/sql-scripts
-                resourcePath = "/17to18Migration/sql-scripts/";
+                resourcePath = CarbonUtils.getCarbonHome() + "dbscripts/migration-1.7.0_to_1.8.0/";
             } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
                 //pick from 16to17Migration/sql-scripts
-                resourcePath = "/16to17Migration/sql-scripts/";
+                resourcePath = CarbonUtils.getCarbonHome() + "dbscripts/migration-1.6.0_to_1.7.0/";
             } else {
                 throw new APIMigrationException("No query picked up for the given migrate version. Please check the migrate version.");
             }
 
             if(Constants.CONSTRAINT.equals(queryType)) {
-                resourcePath = CarbonUtils.getCarbonHome() + "/repository/components/dropins/";
-                //inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "query.sql");
-                queryTobeExecuted = IOUtils.toString(new FileInputStream(new File(resourcePath + "query.txt")), "UTF-8");
+                resourcePath = CarbonUtils.getCarbonHome() + "dbscripts/migration-1.8.0_to_1.9.0/";
+                queryTobeExecuted = IOUtils.toString(new FileInputStream(new File(resourcePath + "drop-fk.sql")), "UTF-8");
             } else {
                 inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + databaseType + ".sql");
                 queryTobeExecuted = IOUtils.toString(inputStream);
             }
-
-                /*if (databaseType.equalsIgnoreCase("MYSQL")) {
-                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "mysql.sql");
-                } else if (databaseType.equalsIgnoreCase("MSSQL")) {
-                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "mssql.sql");
-                } else if (databaseType.equalsIgnoreCase("H2")) {
-                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "h2.sql");
-                } else if (databaseType.equalsIgnoreCase("ORACLE")) {
-                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "oracle.sql");
-                } else {
-                    inputStream = ResourceUtil.class.getResourceAsStream(resourcePath + "postgresql.sql");
-                }*/
 
         } catch (IOException e) {
             throw new APIMigrationException("Error occurred while accessing the sql from resources. " + e);
