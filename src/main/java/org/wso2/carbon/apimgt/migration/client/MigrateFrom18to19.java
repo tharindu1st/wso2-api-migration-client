@@ -690,7 +690,7 @@ public class MigrateFrom18to19 implements MigrationClient {
                     ResourceUtil.updateSynapseAPI(synapseFile,"ENDPOINT");
                     }
                 }else{
-                    if (synapseFile.getName().matches("[\\w+][-AT-]"+tenant.getDomain()+"[--][\\w+]")){
+                    if (synapseFile.getName().matches("[\\w+][-AT-]"+tenant.getDomain()+"[--][\\w+][__v]")){
                         ResourceUtil.updateSynapseAPI(synapseFile,"ENDPOINT");
                     }
                 }
