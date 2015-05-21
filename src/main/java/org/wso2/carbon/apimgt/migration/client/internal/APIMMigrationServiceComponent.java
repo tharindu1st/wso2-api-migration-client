@@ -48,8 +48,6 @@ import java.util.Map;
  * policy="dynamic" bind="setRegistryService" unbind="unsetRegistryService"
  * @scr.reference name="tenant.registryloader" interface="org.wso2.carbon.registry.core.service.TenantRegistryLoader" cardinality="1..1"
  * policy="dynamic" bind="setTenantRegistryLoader" unbind="unsetTenantRegistryLoader"
- * @scr.reference name="apim.configuration" interface="org.wso2.carbon.apimgt.impl.APIManagerConfigurationService" cardinality="1..1"
- * policy="dynamic" bind="setApiManagerConfig" unbind="unsetApiManagerConfig"
  */
 
 @SuppressWarnings("unused")
@@ -226,24 +224,6 @@ public class APIMMigrationServiceComponent {
     protected void unsetTenantRegistryLoader(TenantRegistryLoader tenantRegLoader) {
         log.debug("Unset Tenant Registry Loader");
         ServiceHolder.setTenantRegLoader(null);
-    }
-
-    /**
-     * Method to set API Manager configuration
-     *
-     * @param apiManagerConfig api manager configuration
-     */
-    protected void setApiManagerConfig(APIManagerConfigurationService apiManagerConfig) {
-        log.info("Setting APIManager configuration");
-    }
-
-    /**
-     * Method to unset API manager configuration
-     *
-     * @param apiManagerConfig api manager configuration
-     */
-    protected void unsetApiManagerConfig(APIManagerConfigurationService apiManagerConfig) {
-        log.info("Un-setting APIManager configuration");
     }
 
 }

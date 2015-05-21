@@ -33,10 +33,8 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
+import javax.xml.stream.XMLStreamWriter;
+import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
@@ -168,7 +166,8 @@ public class ResourceUtil {
      * @param sequenceName              sequence name
      * @throws APIMigrationException
      */
-    public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath, String sequenceName) throws APIMigrationException {
+    public static void copyNewSequenceToExistingSequences(String sequenceDirectoryFilePath, String sequenceName)
+            throws APIMigrationException {
         try {
             String namespace = "http://ws.apache.org/ns/synapse";
             String filePath = sequenceDirectoryFilePath + sequenceName + ".xml";
@@ -176,23 +175,33 @@ public class ResourceUtil {
             docFactory.setNamespaceAware(true);
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             Document doc = docBuilder.parse(filePath);
-            Node sequence = doc.getFirstChild();
-            Element corsHandler = doc.createElementNS(namespace, "sequence");
-            corsHandler.setAttribute("key", "_cors_request_handler");
-           if ("_throttle_out_handler_".equals(sequenceName)){
-               sequence.appendChild(corsHandler);
-           } else if ("_auth_failure_handler_".equals(sequenceName)){
-               sequence.appendChild(corsHandler);
-            }else{
-               sequence.insertBefore(corsHandler, doc.getElementsByTagName("send").item(0));
-           }
-
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            DOMSource source = new DOMSource(doc);
-            String outputPath = sequenceDirectoryFilePath + "test_" + sequenceName + ".xml";
-            StreamResult result = new StreamResult(new File(outputPath));
-            transformer.transform(source, result);
+            Node sequence = doc.getElementsByTagName("sequence").item(0);
+            Element corsSequence = doc.createElementNS(namespace, "sequence");
+            corsSequence.setAttribute("key", "_cors_request_handler");
+            boolean available = false;
+            for (int i = 0; i < sequence.getChildNodes().getLength(); i++) {
+                Node tempNode = sequence.getChildNodes().item(i);
+                if (tempNode.getNodeType() == Node.ELEMENT_NODE &&"sequence".equals(tempNode.getLocalName()) &&
+                    "_cors_request_handler".equals(tempNode.getAttributes().getNamedItem("key").getTextContent())) {
+                    available = true;
+                    break;
+                }
+            }
+            if (!available) {
+                if ("_throttle_out_handler_".equals(sequenceName)) {
+                    sequence.appendChild(corsSequence);
+                } else if ("_auth_failure_handler_".equals(sequenceName)) {
+                    sequence.appendChild(corsSequence);
+                } else {
+                    sequence.insertBefore(corsSequence, doc.getElementsByTagName("send").item(0));
+                }
+                TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                Transformer transformer = transformerFactory.newTransformer();
+                transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                DOMSource source = new DOMSource(doc);
+                StreamResult result = new StreamResult(new File(filePath));
+                transformer.transform(source, result);
+            }
         } catch (ParserConfigurationException e) {
             handleException("Could not initiate Document Builder.", e);
         } catch (TransformerConfigurationException e) {
