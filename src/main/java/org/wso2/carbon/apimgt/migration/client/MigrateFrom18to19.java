@@ -49,7 +49,6 @@ import org.wso2.carbon.utils.CarbonUtils;
 import org.wso2.carbon.registry.api.RegistryException;
 import org.wso2.carbon.registry.api.Resource;
 
-import javax.sql.DataSource;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
