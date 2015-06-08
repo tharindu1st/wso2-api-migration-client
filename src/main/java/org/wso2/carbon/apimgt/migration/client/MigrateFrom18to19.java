@@ -49,11 +49,26 @@ import org.wso2.carbon.utils.CarbonUtils;
 import org.wso2.carbon.registry.api.RegistryException;
 import org.wso2.carbon.registry.api.Resource;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 
 /**
@@ -302,6 +317,11 @@ public class MigrateFrom18to19 implements MigrationClient {
         } catch (UserStoreException e) {
             ResourceUtil.handleException("Error occurred while reading tenant information", e);
         }
+        finally {
+            if(isTenantFlowStarted){
+                PrivilegedCarbonContext.endTenantFlow();
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug("Rxt resource migration done for all the tenants");
         }
@@ -452,6 +472,9 @@ public class MigrateFrom18to19 implements MigrationClient {
             ResourceUtil.handleException("Error occurred while getting swagger v2.0 document", e);
         } catch (UserStoreException e) {
             ResourceUtil.handleException("Error occurred while reading tenant information", e);
+        }
+        if(isTenantFlowStarted){
+            PrivilegedCarbonContext.endTenantFlow();
         }
 
         if (log.isDebugEnabled()) {
