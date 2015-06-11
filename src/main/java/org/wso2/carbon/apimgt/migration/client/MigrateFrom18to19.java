@@ -702,7 +702,14 @@ public class MigrateFrom18to19 implements MigrationClient {
                     } else {
                         paramObj.put("description", "");
                     }
-                    newParameters.add(paramObj);
+                    //Skip GET and DELETE methods
+                    /*if (!("GET".equals(method)) && !("DELETE".equals(method))) {
+                        newParameters.add(paramObj);
+                    } else {
+                        if (!("body".equals(oldParam.get("paramType")))) {
+                            newParameters.add(paramObj);
+                        }
+                    }*/
                 }
 
                 //generate the Operation object
